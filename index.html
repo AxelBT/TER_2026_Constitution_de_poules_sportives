@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Carte Interactive</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        /* La carte doit avoir une hauteur définie pour s'afficher */
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+
+    <h2>Localisation sur la carte</h2>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Initialisation de la carte (Coordonnées de Paris par défaut)
+        // [Latitude, Longitude], Niveau de zoom
+        const map = L.map('map').setView([48.8566, 2.3522], 13);
+
+        // 2. Ajout du fond de carte (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. Ajout d'un marqueur personnalisé
+        const marker = L.marker([48.8566, 2.3522]).addTo(map);
+        
+        // 4. Ajout d'une bulle d'info (Popup)
+        marker.bindPopup("<b>Bonjour !</b><br>Ceci est Paris.").openPopup();
+    </script>
+
+</body>
+</html>

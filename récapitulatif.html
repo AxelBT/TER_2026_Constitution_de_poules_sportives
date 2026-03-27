@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Récapitulatif Global - Poules</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .recap-container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        .niveau-section { background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn-export { background: #059669; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .btn-export:hover { background: #047857; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+        th { background: #f9fafb; font-weight: 600; }
+        .no-data { text-align: center; padding: 40px; color: #6b7280; }
+    </style>
+</head>
+<body>
+
+<div class="recap-container">
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h1>Récapitulatif du Championnat</h1>
+        <button id="export-csv" class="btn-export">📥 Exporter tout en CSV</button>
+    </header>
+
+    <div id="global-results">
+        </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('global-results');
+        
+        const rawConfig = localStorage.getItem('championnatConfig');
+        
+        if (!rawConfig) {
+            container.innerHTML = `<div class="no-data">
+                <p>Aucune donnée trouvée. Veuillez configurer le championnat d'abord.</p>
+                <a href="poule.html" style="color: #2563eb;">Retour à l'accueil</a>
+            </div>`;
+            return;
+        }
+
+        const config = JSON.parse(rawConfig);
+        const nbNiveaux = parseInt(config.niveaux) || 0;
+
+        // 2. Génération dynamique des sections par niveau
+        if (nbNiveaux > 0) {
+            for (let i = 1; i <= nbNiveaux; i++) {
+                const section = document.createElement('section');
+                section.className = 'niveau-section';
+                
+                section.innerHTML = `
+                    <h2>Niveau ${i}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Poule</th>
+                                <th>Équipes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Poule A</td>
+                                <td>Équipe 1, Équipe 2, Équipe 3</td>
+                            </tr>
+                            <tr>
+                                <td>Poule B</td>
+                                <td>Équipe 4, Équipe 5, Équipe 6</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(section);
+            }
+        }
+
+        document.getElementById('export-csv').addEventListener('click', () => {
+            exportToCSV();
+        });
+    });
+
+    function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,Niveau;Poule;Equipes\n";
+        csvContent += "1;Poule A;Equipe 1, Equipe 2\n"; // À dynamiser plus tard
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "recapitulatif_championnat.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
