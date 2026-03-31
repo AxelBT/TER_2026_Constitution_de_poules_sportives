@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    console.log(form);
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -25,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             localStorage.setItem('championnatConfig', JSON.stringify(config));
-            
             window.location.href = 'niveau.html';
         });
     }
