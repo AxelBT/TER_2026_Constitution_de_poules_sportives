@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration du Championnat</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
+<body>
     <div class="container">
         <div class="card">
             <header class="card-header">
@@ -16,11 +17,16 @@
             </header>
 
             <form id="form-config">
-                
+
                 <div class="form-group">
-                    <label for="nom_championnat">Nom du Championnat</label>
-                    <input type="text" id="nom_championnat" name="nom_championnat" required 
-                        placeholder="Ex: Ligue Régionale 2026">
+                    <label for="cat-select">Choisissez une catégorie&nbsp;:</label>
+
+                    <select name="category" id="cat-select">
+                        <option value="">Veuillez choisir une option</option>
+                        <option value="senior">Senior</option>
+                        <option value="junior">Junior</option>
+                        
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -47,7 +53,7 @@
                 <div class="form-group">
                     <label>Liste des clubs (Format CSV)</label>
                     <div class="drop-zone" id="drop-zone">
-                        <input type="file" id="file_csv" name="file_csv" accept=".csv" required class="file-input">
+                        <input type="file" id="file_csv" name="file_csv" accept=".csv" class="file-input">
                         <div class="drop-zone-content">
                             <span class="icon">📁</span>
                             <p id="file-label">Glissez votre fichier ici ou <strong>parcourez</strong></p>
@@ -63,4 +69,5 @@
 
     <script src="config.js"></script>
 </body>
+
 </html>
