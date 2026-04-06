@@ -13,18 +13,13 @@
         <mxCell id="K0DlSlIzfYJrMVO193uZ-2" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=15;" value="Equipes" vertex="1">
           <mxGeometry height="200" width="200" x="770" y="-10" as="geometry" />
         </mxCell>
-        <mxCell id="K0DlSlIzfYJrMVO193uZ-5" parent="K0DlSlIzfYJrMVO193uZ-2" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="- id&lt;div&gt;- id_club&lt;br&gt;&lt;div&gt;- nom&lt;/div&gt;&lt;div&gt;- niveau&lt;br&gt;- effectif&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+        <mxCell id="K0DlSlIzfYJrMVO193uZ-5" parent="K0DlSlIzfYJrMVO193uZ-2" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="- id&lt;div&gt;- id_club&lt;br&gt;&lt;div&gt;- nom&lt;/div&gt;&lt;div&gt;- niveau&lt;br&gt;- nombre&lt;/div&gt;&lt;div&gt;- type&lt;br&gt;- resultat&lt;/div&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="80" width="119" y="50" as="geometry" />
-        </mxCell>
-        <mxCell id="Y7URl94upYVU1gQOJlxN-2" edge="1" parent="1" source="K0DlSlIzfYJrMVO193uZ-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="K0DlSlIzfYJrMVO193uZ-2">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="890" y="200" as="targetPoint" />
-          </mxGeometry>
         </mxCell>
         <mxCell id="K0DlSlIzfYJrMVO193uZ-3" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=15;" value="Poules" vertex="1">
           <mxGeometry height="200" width="200" x="415" y="340" as="geometry" />
         </mxCell>
-        <mxCell id="K0DlSlIzfYJrMVO193uZ-6" parent="K0DlSlIzfYJrMVO193uZ-3" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="- nom&lt;div&gt;&lt;div&gt;- niveau&lt;br&gt;- nombre&lt;/div&gt;&lt;div&gt;- effectif&lt;/div&gt;&lt;div&gt;- liste_equipes&lt;/div&gt;&lt;div&gt;- distance_moyenne&lt;/div&gt;&lt;/div&gt;&lt;div&gt;- baricentre&lt;/div&gt;" vertex="1">
+        <mxCell id="K0DlSlIzfYJrMVO193uZ-6" parent="K0DlSlIzfYJrMVO193uZ-3" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="- id&lt;div&gt;- niveau&lt;br&gt;- nombre&lt;/div&gt;&lt;div&gt;- nom_comp&lt;br&gt;&lt;/div&gt;&lt;div&gt;- liste_equipes&lt;/div&gt;&lt;div&gt;- distance_moyenne&lt;/div&gt;" vertex="1">
           <mxGeometry height="80" width="180" y="60" as="geometry" />
         </mxCell>
         <mxCell id="K0DlSlIzfYJrMVO193uZ-24" parent="1" style="shape=lineEllipse;perimeter=ellipsePerimeter;whiteSpace=wrap;html=1;backgroundOutline=1;" value="" vertex="1">
