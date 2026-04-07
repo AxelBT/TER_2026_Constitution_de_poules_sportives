@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="pool-team-row">
                 <span class="pool-team-dot" style="background:${couleur}"></span>
                 <span>${e.nom}</span>
-                <span class="pool-team-club">Club ${e.id_club}</span>
+                <span class="pool-team-club">Club : ${e.id_club}</span>
             </div>
         `).join('');
 
