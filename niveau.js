@@ -119,6 +119,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
     const btnsGenerer = document.getElementsByClassName('btn-generate');
+    const fileInput = document.getElementById('file_csv_niveau');
+    const fileLabel = document.getElementById('file-label');
+
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileLabel.innerText = "Fichier prêt : " + e.target.files[0].name;
+            }
+        });
+    }
+
 
     if (config.niveauActuel === 1) {
         btnPrev.innerHTML = `
@@ -166,12 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = function (e) {
                 const contenu = e.target.result;
                 const equipes = traiterCSV(contenu);
-                //localStorage.setItem("equipes", JSON.stringify(equipes));
+                localStorage.setItem("equipes", JSON.stringify(equipes));
                 const nb_poules = parseInt(document.getElementById('nb_poules').value);
                 const nb_max = parseInt(document.getElementById('nb_max_equipes').value);
-                let ps = generer_poules(equipes, nb_poules, nb_max);
-                console.log(equipes);
-                afficherPoules(ps);
+                const poules = generer_poules(equipes, nb_poules, nb_max);
+                afficherPoules(poules);
+                localStorage.setItem(`poules_niveau${config.niveauActuel}`, JSON.stringify(poules));
             };
             reader.readAsText(file);
 
@@ -217,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             m.bindPopup(`<strong>${c.nom_club}</strong>`);
             m.addTo(map);
             markers.push(m);
-            bounds.push([c.longitude, c.latitude]);
+            bounds.push([parseFloat(c.longitude), parseFloat(c.latitude)]);
         });
         if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
     }
@@ -232,15 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!poules.length) {
             meta.textContent = '';
             grid.innerHTML = `
-                <div class="pools-empty">
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                    <p>Les poules apparaîtront ici après génération.</p>
-                </div>`;
+            <div class="pools-empty">
+                <p>Les poules apparaîtront ici après génération.</p>
+            </div>`;
             return;
         }
 
@@ -248,22 +254,29 @@ document.addEventListener('DOMContentLoaded', () => {
         meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
 
         grid.innerHTML = poules.map((poule, pi) => {
-            const lettre = String.fromCharCode(65 + pi);
+            const lettre = poule.nom || String.fromCharCode(65 + pi);
             const couleur = PALETTE[pi % PALETTE.length];
+
             const lignes = poule.equipes.map(e => `
-                <div class="pool-team-row">
-                    <span class="pool-team-dot" style="background:${couleur}"></span>
-                    <span>${e.nom}</span>
-                    <span class="pool-team-club">${e.id_club}</span>
-                </div>`).join('');
+            <div class="pool-team-row">
+                <span class="pool-team-dot" style="background:${couleur}"></span>
+                <span>${e.nom}</span>
+                <span class="pool-team-club">Club ${e.id_club}</span>
+            </div>
+        `).join('');
+
             return `
-                <div class="pool-card">
-                    <div class="pool-card-head">
-                        <span class="pool-dot" style="background:${couleur}"></span>
-                        Poule ${lettre} <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">(${poule.distance_moyenne})</span>
-                    </div>
-                    ${lignes}
-                </div>`;
+            <div class="pool-card">
+                <div class="pool-card-head">
+                    <span class="pool-dot" style="background:${couleur}"></span>
+                    Poule ${lettre}
+                    <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">
+                        (${poule.equipes.length}/${poule.nb_max})
+                    </span>
+                </div>
+                ${lignes}
+            </div>
+        `;
         }).join('');
     }
 
@@ -272,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     function onGenerer(mode) {
         const clubs = JSON.parse(localStorage.getItem("clubs"));
+        debugger;
         afficherCarte(clubs);
         afficherPoules([]);
         toast(`${clubs.length} clubs de démo affichés (mode : ${mode === 'niveau' ? 'par niveau' : 'par distance'}).`, 'info');
@@ -289,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     updateTitre();
     renderStepper();
-    afficherPoules([]);
+    //afficherPoules([]);
 
     setTimeout(() => map.invalidateSize(), 100);
 });

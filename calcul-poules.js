@@ -309,4 +309,3 @@ export function generer_poules(equipes,nb_poules,nb_max){
 
 
 
-
