@@ -24,28 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ====================================================
        DONNÉES DE DÉMO — 20 clubs français
        ==================================================== */
-    const CLUBS_DEMO = [
-        { nom_club: 'Paris FC', lat: 48.856, lng: 2.352 },
-        { nom_club: 'Olympique Lyonnais', lat: 45.764, lng: 4.836 },
-        { nom_club: 'Olympique Marseille', lat: 43.297, lng: 5.370 },
-        { nom_club: 'AS Monaco', lat: 43.738, lng: 7.425 },
-        { nom_club: 'Stade Rennais', lat: 48.117, lng: -1.678 },
-        { nom_club: 'LOSC Lille', lat: 50.629, lng: 3.057 },
-        { nom_club: 'Girondins Bordeaux', lat: 44.838, lng: -0.579 },
-        { nom_club: 'Toulouse FC', lat: 43.605, lng: 1.444 },
-        { nom_club: 'Montpellier HSC', lat: 43.612, lng: 3.877 },
-        { nom_club: 'RC Strasbourg', lat: 48.573, lng: 7.752 },
-        { nom_club: 'RC Lens', lat: 50.431, lng: 2.831 },
-        { nom_club: 'Stade de Reims', lat: 49.258, lng: 4.032 },
-        { nom_club: 'FC Nantes', lat: 47.218, lng: -1.554 },
-        { nom_club: 'OGC Nice', lat: 43.710, lng: 7.262 },
-        { nom_club: 'Stade Brestois', lat: 48.391, lng: -4.486 },
-        { nom_club: 'AC Ajaccio', lat: 41.919, lng: 8.739 },
-        { nom_club: 'Clermont Foot', lat: 45.780, lng: 3.086 },
-        { nom_club: 'EA Guingamp', lat: 48.564, lng: -3.150 },
-        { nom_club: 'Dijon FCO', lat: 47.322, lng: 5.042 },
-        { nom_club: 'AS Saint-Étienne', lat: 45.440, lng: 4.387 },
-    ];
+
 
     /* ====================================================
        TOASTS
