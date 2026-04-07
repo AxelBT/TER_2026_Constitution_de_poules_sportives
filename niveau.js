@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ====================================================
        DONNÉES DE DÉMO — 20 clubs français
        ==================================================== */
-    const CLUBS_DEMO = [
+    /*const CLUBS_DEMO = [
         { nom_club: 'Paris FC', lat: 48.856, lng: 2.352 },
         { nom_club: 'Olympique Lyonnais', lat: 45.764, lng: 4.836 },
         { nom_club: 'Olympique Marseille', lat: 43.297, lng: 5.370 },
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { nom_club: 'EA Guingamp', lat: 48.564, lng: -3.150 },
         { nom_club: 'Dijon FCO', lat: 47.322, lng: 5.042 },
         { nom_club: 'AS Saint-Étienne', lat: 45.440, lng: 4.387 },
-    ];
+    ];*/
 
     /* ====================================================
        TOASTS
