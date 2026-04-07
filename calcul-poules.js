@@ -36,14 +36,14 @@ export function traiterCSV(contenu) {
 
     for (let i = 0; i < lignes.length; i++) {
         if (lignes[i].trim() === "") continue;
-        //console.log(lignes[i]);
+        console.log(lignes[i]);
         const colonnes = lignes[i].split(";");
 
         data.push({
             id: colonnes[0],
             id_club: colonnes[1],
             nom: colonnes[2],
-            niveau: parseInt(colonnes[3]),
+            niveau: parseInt(colonnes[3]),//à voir 
             effectif: parseInt(colonnes[4])
         });
     }
@@ -241,7 +241,7 @@ export function generer_poules(equipes,nb_poules,nb_max){
         restantes = trierParTailleClub(restantes);
         //console.log(barycentre);
 
-        for (let equipe of restantes) {
+        /*for (let equipe of restantes) {
             let meilleure = choisirMeilleurePoule(poules, equipe);
 
             if (meilleure) {
@@ -249,10 +249,58 @@ export function generer_poules(equipes,nb_poules,nb_max){
             } else {
                 console.log("Impossible de placer :", equipe.nom);
             }
+        }*/
+        
+        for (let equipe of restantes) {
+            let meilleure = choisirMeilleurePoule(poules, equipe);
+
+            if (meilleure) {
+                ajouterEquipeDansPoule(meilleure, equipe);
+            } else {
+                
+                console.log("Tentative de sauvetage pour :", equipe.nom);
+                
+                let placementTrouve = false;
+                // On cherche une poule qui n'a pas le club (même si elle est pleine)
+                for (let p of poules) {
+                    if (!verifierClubDansPoule(p, equipe)) {
+                        // On cherche dans cette poule 'p' une équipe 'e' qu'on peut déplacer
+                        for (let i = 0; i < p.equipes.length; i++) {
+                            let equipeEchange = p.equipes[i];
+                            
+                            // Est-ce que equipeEchange peut aller dans une AUTRE poule qui a de la place ?
+                            for (let pAutre of poules) {
+                                if (pAutre !== p && 
+                                    pAutre.effectif < pAutre.nb_max && 
+                                    !verifierClubDansPoule(pAutre, equipeEchange)) {
+                                    
+                                    // On déplace l'équipe échange
+                                    p.equipes.splice(i, 1);
+                                    p.effectif--;
+                                    ajouterEquipeDansPoule(pAutre, equipeEchange);
+                                    
+                                    // On place l'équipe qui était bloquée
+                                    ajouterEquipeDansPoule(p, equipe);
+                                    placementTrouve = true;
+                                    break;
+                                }
+                            }
+                            if (placementTrouve) break;
+                        }
+                    }
+                    if (placementTrouve) break;
+                }
+
+                if (!placementTrouve) {
+                    toast(`Échec critique : ${equipe.nom} ne peut pas être placée sans violer les règles.`, 'error');
+                }
+            }
         }
 
         console.log(poules);
+        return poules;
     }
+    
 
 }
 

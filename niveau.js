@@ -169,8 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 //localStorage.setItem("equipes", JSON.stringify(equipes));
                 const nb_poules = parseInt(document.getElementById('nb_poules').value);
                 const nb_max = parseInt(document.getElementById('nb_max_equipes').value);
-                generer_poules(equipes, nb_poules, nb_max);
+                let ps = generer_poules(equipes, nb_poules, nb_max);
                 console.log(equipes);
+                afficherPoules(ps);
             };
             reader.readAsText(file);
 
@@ -243,23 +244,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const totalEq = poules.reduce((s, p) => s + p.length, 0);
+        const totalEq = poules.reduce((s, p) => s + p.equipes.length, 0);
         meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
 
         grid.innerHTML = poules.map((poule, pi) => {
             const lettre = String.fromCharCode(65 + pi);
             const couleur = PALETTE[pi % PALETTE.length];
-            const lignes = poule.map(e => `
+            const lignes = poule.equipes.map(e => `
                 <div class="pool-team-row">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
-                    <span>${e.nom_equipe}</span>
-                    <span class="pool-team-club">${e.nom_club}</span>
+                    <span>${e.nom}</span>
+                    <span class="pool-team-club">${e.id_club}</span>
                 </div>`).join('');
             return `
                 <div class="pool-card">
                     <div class="pool-card-head">
                         <span class="pool-dot" style="background:${couleur}"></span>
-                        Poule ${lettre} <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">(${poule.length})</span>
+                        Poule ${lettre} <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">(${poule.distance_moyenne})</span>
                     </div>
                     ${lignes}
                 </div>`;
