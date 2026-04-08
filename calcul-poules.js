@@ -30,7 +30,7 @@ if (!config) {
     }
 
 
-export function traiterCSV(contenu) {
+/*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
     const data = [];
 
@@ -58,6 +58,91 @@ export function traiterCSV(contenu) {
         longitude: mapClubs[e.id_club].longitude
     }));
 
+}*/
+
+export function traiterCSV(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    
+    
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id] = c; });
+
+    for (let i = 0; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+        
+        const colonnes = lignes[i].split(";");
+        const idClubEquipe = colonnes[1]; // L'ID club renseigné pour l'équipe
+
+        if (!mapClubs[idClubEquipe]) {
+            const nomEquipe = colonnes[2] || "Inconnue";
+            // On affiche le toast d'erreur
+            toast(`Erreur : Le club (ID: ${idClubEquipe}) de l'équipe "${nomEquipe}" est introuvable dans le fichier des clubs.`, "error");
+            console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
+            
+            // On peut décider de stopper le traitement ou d'ignorer l'équipe
+            continue; 
+        }
+
+        data.push({
+            id: colonnes[0],
+            id_club: idClubEquipe,
+            nom: colonnes[2],
+            niveau: parseInt(colonnes[3]),
+            effectif: parseInt(colonnes[4]),
+            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
+            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
+        });
+    }
+
+    return data;
+}
+
+// Distance Haversine entre deux équipes (en km)
+function distance(e1, e2) {
+    const R = 6371;
+    const dLat = (e2.latitude - e1.latitude) * Math.PI/180;
+    const dLon = (e2.longitude - e1.longitude) * Math.PI/180;
+
+    const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(e1.latitude * Math.PI/180) *
+        Math.cos(e2.latitude * Math.PI/180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function calculerDistanceMoyenne(poule) {
+    if (poule.equipes.length <= 1) return 0;
+
+    let total = 0;
+    let count = 0;
+
+    for (let i = 0; i < poule.equipes.length; i++) {
+        for (let j = i + 1; j < poule.equipes.length; j++) {
+            total += distance(poule.equipes[i], poule.equipes[j]);
+            count++;
+        }
+    }
+
+    return total / count;
+}
+
+// Barycentre géographique d'un tableau d'équipes
+function calculerBarycentre(equipes) {
+    if (equipes.length === 0) return null;
+
+    const total = equipes.reduce((acc, e) => {
+        acc.lat += e.latitude;
+        acc.lon += e.longitude;
+        return acc;
+    }, { lat: 0, lon: 0 });
+
+    return {
+        latitude: total.lat / equipes.length,
+        longitude: total.lon / equipes.length
+    };
 }
 
 function definirCapacitesPoules(nb_poules, total_equipes) {
@@ -84,57 +169,66 @@ function initialiserPoules(nb_poules, niveau, capacites) {
         nom: lettres[i],
         niveau: niveau,
         nb_max: capacites[i],
-        effectif: 0,
         equipes: [],
         distance_moyenne: 0,
         barycentre: null
     }));
 }
 
-function trierEquipesParDistanceAuCentre(equipes, centre) {
-    return equipes
-        .map(e => ({
-            ...e,
-            dist: distance(e, centre)
-        }))
-        .sort((a, b) => b.dist - a.dist);
+function trierParTailleClub(equipes) {
+    const count = {};
+    equipes.forEach(e => {
+        count[e.id_club] = (count[e.id_club] || 0) + 1;
+    });
+
+    // trier
+    return equipes.sort((a, b) => {
+        return count[b.id_club] - count[a.id_club];
+    });
 }
 
-function choisirGraines(equipesTriees, nb_poules, poules) {
-    for (let i = 0; i < nb_poules; i++) {
-        ajouterEquipeDansPoule(poules[i], equipesTriees[i]);
+function choisirGrainesOptimisees(equipes, nb_poules, poules) {
+    const nonGraines = [...equipes]; // on travaille sur une copie
+ 
+    const barycentreGlobal = calculerBarycentre(equipes);
+    let indexMax = 0;
+    let distMax  = -1;
+ 
+    for (let i = 0; i < nonGraines.length; i++) {
+        const d = distance(nonGraines[i], barycentreGlobal);
+        if (d > distMax) { distMax = d; indexMax = i; }
     }
-
-    return equipesTriees.slice(nb_poules);
+ 
+    ajouterEquipeDansPoule(poules[0], nonGraines[indexMax]);
+    nonGraines.splice(indexMax, 1);
+ 
+    for (let g = 1; g < nb_poules; g++) {
+        const graines = poules.slice(0, g).map(p => p.equipes[0]); // graines déjà placées
+ 
+        let meilleurIndex = 0;
+        let meilleurScore = -1; // on cherche le MAX
+ 
+        for (let i = 0; i < nonGraines.length; i++) {
+            const minDist = Math.min(...graines.map(gr => distance(nonGraines[i], gr)));
+ 
+            if (minDist > meilleurScore) {
+                meilleurScore = minDist;
+                meilleurIndex = i;
+            }
+        }
+ 
+        ajouterEquipeDansPoule(poules[g], nonGraines[meilleurIndex]);
+        nonGraines.splice(meilleurIndex, 1);
+    }
+ 
+    return nonGraines;
 }
 
 function verifierClubDansPoule(poule, equipe) {
     return poule.equipes.some(e => e.id_club === equipe.id_club);
 }
 
-function calculerDistanceMoyenne(poule) {
-    if (poule.equipes.length <= 1) return 0;
-
-    let total = 0;
-    let count = 0;
-
-    for (let i = 0; i < poule.equipes.length; i++) {
-        for (let j = i + 1; j < poule.equipes.length; j++) {
-            total += distance(poule.equipes[i], poule.equipes[j]);
-            count++;
-        }
-    }
-
-    return total / count;
-}
-
-function simulerAjout(poule, equipe) {
-    const copie = [...poule.equipes, equipe];
-
-    return calculerDistanceMoyenne({ equipes: copie });
-}
-
-function choisirMeilleurePoule(poules, equipe) {
+/*function choisirMeilleurePoule(poules, equipe) {
     let meilleure = null;
     let minDistance = Infinity;
 
@@ -153,28 +247,88 @@ function choisirMeilleurePoule(poules, equipe) {
     }
 
     return meilleure;
+}*/
+function choisirMeilleurePoule(poules, equipe) {
+    let meilleure    = null;
+    let minDist      = Infinity;
+ 
+    for (const p of poules) {
+        
+        if (p.equipes.length >= p.nb_max) continue;
+ 
+        
+        if (verifierClubDansPoule(p, equipe)) continue;
+ 
+        
+        const bary = p.barycentre;
+        if (!bary) continue; // ne devrait pas arriver (graine toujours présente)
+ 
+        const d = distance(equipe, bary);
+        if (d < minDist) {
+            minDist   = d;
+            meilleure = p;
+        }
+    }
+ 
+    return meilleure;
 }
+
 
 function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
-    poule.effectif++;
-
     poule.barycentre = calculerBarycentre(poule.equipes);
     poule.distance_moyenne = calculerDistanceMoyenne(poule);
 }
 
-function trierParTailleClub(equipes) {
-    const count = {};
-    equipes.forEach(e => {
-        count[e.id_club] = (count[e.id_club] || 0) + 1;
-    });
+/*function trierEquipesParDistanceAuCentre(equipes, centre) {
+    return equipes
+        .map(e => ({
+            ...e,
+            dist: distance(e, centre)
+        }))
+        .sort((a, b) => b.dist - a.dist);
+}*/
 
-    // trier
-    return equipes.sort((a, b) => {
-        return count[b.id_club] - count[a.id_club];
-    });
+/*function choisirGraines(equipesTriees, nb_poules, poules) {
+    for (let i = 0; i < nb_poules; i++) {
+        ajouterEquipeDansPoule(poules[i], equipesTriees[i]);
+    }
+
+    return equipesTriees.slice(nb_poules);
+}*/
+
+/*function simulerAjout(poule, equipe) {
+    const copie = [...poule.equipes, equipe];
+
+    return calculerDistanceMoyenne({ equipes: copie });
+}*/
+
+function tenterSauvetage(poules, equipe) {
+    for (const p of poules) {
+        if (verifierClubDansPoule(p, equipe)) continue;
+ 
+        for (let i = 0; i < p.equipes.length; i++) {
+            const equipeEchange = p.equipes[i];
+ 
+            for (const pCible of poules) {
+                if (
+                    pCible !== p &&
+                    pCible.equipes.length < pCible.nb_max &&
+                    !verifierClubDansPoule(pCible, equipeEchange)
+                ) {
+                    p.equipes.splice(i, 1);
+                    //p.barycentre       = calculerBarycentre(p.equipes);
+                    //p.distance_moyenne = calculerDistanceMoyenne(p);
+ 
+                    ajouterEquipeDansPoule(pCible, equipeEchange);
+                    ajouterEquipeDansPoule(p, equipe);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
-
 
 function verifierContraintes(equipes, nb_poules) {
     const count = {};
@@ -187,38 +341,82 @@ function verifierContraintes(equipes, nb_poules) {
     return max <= nb_poules;
 }
 
-//(Haversine)
-function distance(e1, e2) {
-    const R = 6371;
-    const dLat = (e2.latitude - e1.latitude) * Math.PI/180;
-    const dLon = (e2.longitude - e1.longitude) * Math.PI/180;
+function finaliserStatistiquesPoules(poules) {
+    poules.forEach(poule => {
+        let sommeDistancesPoule = 0;
+        let nbPaires = 0;
+        const n = poule.equipes.length;
 
-    const a =
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(e1.latitude * Math.PI/180) *
-        Math.cos(e2.latitude * Math.PI/180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
+        poule.equipes.forEach(e => e.distance_totale = 0);
 
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const d = distance(poule.equipes[i], poule.equipes[j]);
+                
+                poule.equipes[i].distance_totale += d;
+                poule.equipes[j].distance_totale += d;
+
+                sommeDistancesPoule += d;
+                nbPaires++;
+            }
+        }
+
+        poule.distance_moyenne = nbPaires > 0 ? (sommeDistancesPoule / nbPaires).toFixed(2) : 0;
+        
+        poule.equipes.forEach(e => {
+            e.distance_totale = e.distance_totale.toFixed(2);
+        });
+    });
 }
 
-function calculerBarycentre(equipes) {
-    if (equipes.length === 0) return null;
 
-    const total = equipes.reduce((acc, e) => {
-        acc.lat += e.latitude;
-        acc.lon += e.longitude;
-        return acc;
-    }, { lat: 0, lon: 0 });
+export function generer_poules(equipes, nb_poules, nb_max) {
+    const nb_equipes = equipes.length;
+ 
+    if (nb_poules * nb_max < nb_equipes) {
+        toast("Capacité insuffisante : augmente le nombre de poules ou la taille max.", "error");
+        return;
+    }
+ 
+    if (nb_equipes <= nb_poules * (nb_max - 1)) {
+        toast("Trop peu d'équipes : réduis le nombre de poules ou la taille max.", "error");
+        return;
+    }
+    
+    if (!verifierContraintes(equipes, nb_poules)) {
+        toast("Trop d\'équipes d\'un même club pour le nombre de poules.", "error");
+        return;
+    }
+ 
+    
+    const capacites = definirCapacitesPoules(nb_poules, nb_equipes);
+    const poules    = initialiserPoules(nb_poules, config.niveauActuel, capacites);
+ 
+    let restantes = choisirGrainesOptimisees(equipes, nb_poules, poules);
+    restantes = trierParTailleClub(restantes);
 
-    return {
-        latitude: total.lat / equipes.length,
-        longitude: total.lon / equipes.length
-    };
+    for (const equipe of restantes) {
+        const meilleure = choisirMeilleurePoule(poules, equipe);
+ 
+        if (meilleure) {
+            ajouterEquipeDansPoule(meilleure, equipe);
+        } else {
+            console.warn("Sauvetage nécessaire pour :", equipe.nom);
+            const succes = tenterSauvetage(poules, equipe);
+ 
+            if (!succes) {
+                toast(`Échec critique : "${equipe.nom}" ne peut pas être placée.`, "error");
+            }
+        }
+    }
+
+
+    finaliserStatistiquesPoules(poules);
+    console.log("Poules générées :", poules);
+    return poules;
 }
 
-
-export function generer_poules(equipes,nb_poules,nb_max){
+/*export function generer_poules(equipes,nb_poules,nb_max){
     const nb_equipes = equipes.length;
     //console.log(nb_equipes);
     if (nb_poules*nb_max < nb_equipes){
@@ -239,17 +437,6 @@ export function generer_poules(equipes,nb_poules,nb_max){
         let equipesTriees = trierEquipesParDistanceAuCentre(equipes, barycentre);
         let restantes = choisirGraines(equipesTriees, nb_poules, poules);
         restantes = trierParTailleClub(restantes);
-        //console.log(barycentre);
-
-        /*for (let equipe of restantes) {
-            let meilleure = choisirMeilleurePoule(poules, equipe);
-
-            if (meilleure) {
-                ajouterEquipeDansPoule(meilleure, equipe);
-            } else {
-                console.log("Impossible de placer :", equipe.nom);
-            }
-        }*/
         
         for (let equipe of restantes) {
             let meilleure = choisirMeilleurePoule(poules, equipe);
@@ -302,7 +489,7 @@ export function generer_poules(equipes,nb_poules,nb_max){
     }
     
 
-}
+}*/
 
 
 
