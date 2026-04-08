@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="pool-team-row">
                 <span class="pool-team-dot" style="background:${couleur}"></span>
                 <span>${e.nom}</span>
-                <span class="pool-team-club">Club : ${e.id_club}</span>
+                <span class="pool-team-club">${e.distance_totale}</span>
             </div>
         `).join('');
 
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     function onGenerer(mode) {
         const clubs = JSON.parse(localStorage.getItem("clubs"));
-        debugger;
+        //debugger;
         afficherCarte(clubs);
         afficherPoules([]);
         toast(`${clubs.length} clubs de démo affichés (mode : ${mode === 'niveau' ? 'par niveau' : 'par distance'}).`, 'info');
