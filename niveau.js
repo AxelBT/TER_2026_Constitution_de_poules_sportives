@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idsPoule.has(m.clubId)) {
                 m.setStyle({ fillColor: couleur, fillOpacity: 0.95, radius: 11, color: '#fff', weight: 2.5 });
                 debugger;
-                m.bindPopup(`<strong>${poule.equipes.find((e) => e.id_club =m.clubId ).nom}</strong><br><span style="color:#888"> Club ${m.clubId}</span>`);
+                m.bindPopup(`<strong>${poule.equipes.find((e) => e.id_club === m.clubId ).nom}</strong><br><span style="color:#888"> Club ${m.clubId}</span>`);
                 m.bringToFront();
             } else {
                 m.setStyle({ fillColor: '#888780', fillOpacity: 0.2, radius: 7, color: '#fff', weight: 1.5 });
