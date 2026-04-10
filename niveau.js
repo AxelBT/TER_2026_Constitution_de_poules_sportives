@@ -415,14 +415,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const couleur = PALETTE[pi % PALETTE.length];
 
             const lignes = poule.equipes.map(e => `
-                <div class="pool-team-row${modeEdition ? ' clickable' : ''}"
-                     data-poule-index="${pi}"
-                     data-equipe-id="${e.id}">
-                    <span class="pool-team-dot" style="background:${couleur}"></span>
-                    <span>${e.nom}</span>
-                    <span class="pool-team-club">${e.distance_totale}</span>
-                </div>
-            `).join('');
+            <div class="pool-team-row">
+                <span class="pool-team-dot" style="background:${couleur}"></span>
+                <span>${e.nom}</span>
+                <span class="pool-team-club">${e.distance_totale}</span>
+            </div>
+        `).join('');
 
             return `
             <div class="pool-card" data-poule-index="${pi}">
@@ -454,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     function onGenerer(mode) {
         const clubs = JSON.parse(localStorage.getItem("clubs"));
+        //debugger;
         afficherCarte(clubs);
         afficherPoules([]);
         toast(`${clubs.length} clubs affichés (mode : ${mode === 'niveau' ? 'par niveau' : 'par distance'}).`, 'info');

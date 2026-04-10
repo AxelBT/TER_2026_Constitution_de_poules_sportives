@@ -215,6 +215,7 @@ function choisirMeilleurePoule(poules, equipe) {
     return meilleure;
 }
 
+
 function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
     poule.barycentre = calculerBarycentre(poule.equipes);
@@ -261,7 +262,7 @@ function tenterSauvetage(poules, equipe) {
     const { p, i, equipeEchange, pCible } = meilleurEchange;
 
     p.equipes.splice(i, 1);
-    //p.barycentre       = calculerBarycentre(p.equipes);
+    p.barycentre       = calculerBarycentre(p.equipes);
     //p.distance_moyenne = calculerDistanceMoyenne(p);
 
     ajouterEquipeDansPoule(pCible, equipeEchange);
@@ -269,6 +270,7 @@ function tenterSauvetage(poules, equipe) {
 
     return true;
 }
+
 
 function verifierSaturationClub(equipes, nb_poules) {
     const count = {};
@@ -429,7 +431,7 @@ function equilibrerDistancesMoyennes(poules) {
 }
 
 
-export function calculerDistanceMoyenne(poule) {
+function calculerDistanceMoyenne(poule) {
     if (poule.equipes.length <= 1) return 0;
 
     let total = 0;
@@ -445,10 +447,10 @@ export function calculerDistanceMoyenne(poule) {
     return total / count;
 }
 
-export function finaliserStatistiquesPoules(poules) {
+function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
-        poule.equipes.forEach(e => e.distance_totale = 0);
+
         for (let i = 0; i < n; i++) {
             for (let j = i + 1; j < n; j++) {
                 const d = distance(poule.equipes[i], poule.equipes[j]);
