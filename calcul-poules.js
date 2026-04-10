@@ -186,7 +186,7 @@ function choisirGrainesOptimisees(equipes, nb_poules, poules,barycentreGlobal) {
     return nonGraines;
 }
 
-function verifierClubDansPoule(poule, equipe) {
+export function verifierClubDansPoule(poule, equipe) {
     return poule.equipes.some(e => e.id_club === equipe.id_club);
 }
 
@@ -214,7 +214,6 @@ function choisirMeilleurePoule(poules, equipe) {
  
     return meilleure;
 }
-
 
 function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
@@ -262,7 +261,7 @@ function tenterSauvetage(poules, equipe) {
     const { p, i, equipeEchange, pCible } = meilleurEchange;
 
     p.equipes.splice(i, 1);
-    p.barycentre       = calculerBarycentre(p.equipes);
+    //p.barycentre       = calculerBarycentre(p.equipes);
     //p.distance_moyenne = calculerDistanceMoyenne(p);
 
     ajouterEquipeDansPoule(pCible, equipeEchange);
@@ -270,7 +269,6 @@ function tenterSauvetage(poules, equipe) {
 
     return true;
 }
-
 
 function verifierSaturationClub(equipes, nb_poules) {
     const count = {};
@@ -431,7 +429,7 @@ function equilibrerDistancesMoyennes(poules) {
 }
 
 
-function calculerDistanceMoyenne(poule) {
+export function calculerDistanceMoyenne(poule) {
     if (poule.equipes.length <= 1) return 0;
 
     let total = 0;
@@ -447,7 +445,7 @@ function calculerDistanceMoyenne(poule) {
     return total / count;
 }
 
-function finaliserStatistiquesPoules(poules) {
+export function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
         poule.equipes.forEach(e => e.distance_totale = 0);
