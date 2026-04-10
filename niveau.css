@@ -296,6 +296,73 @@ body {
 
 .btn-generate:active { transform: translateY(0); }
 
+/*bouton d'échange*/
+.btn-switch-style {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    background: linear-gradient(135deg, var(--clr-primary-600), var(--clr-primary-500));
+    color: #fff;
+
+    font-family: var(--ff-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+
+    border: none;
+    border-radius: var(--radius-md);
+
+    cursor: pointer;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: 
+        transform var(--dur) var(--ease-out),
+        box-shadow var(--dur) ease,
+        filter var(--dur) ease;
+}
+
+/* Hover */
+.btn-switch-style:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    filter: brightness(1.05);
+}
+
+/* Active (clic) */
+.btn-switch-style:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    filter: brightness(0.95);
+}
+
+/* Focus (accessibilité) */
+.btn-switch-style:focus-visible {
+    outline: 2px solid var(--clr-primary-300);
+    outline-offset: 2px;
+}
+
+/* Disabled */
+.btn-switch-style:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: grayscale(0.2);
+}
+
+/* Variante avec icône rotation */
+.btn-switch-style svg {
+    transition: transform var(--dur) ease;
+}
+
+.btn-switch-style:hover svg {
+    transform: rotate(90deg);
+}
 /* Statistiques */
 .stats-grid {
     display: grid;
@@ -559,11 +626,80 @@ body {
     max-width: 360px;
 }
 
+.pool-team-row.selected {
+    background: rgba(0, 123, 255, 0.15);
+    border: 1px solid var(--clr-primary-400);
+    border-radius: 6px;
+}
+
 .toast--success { background: #f0fdf4; color: #15803d; border: 1px solid #a6f4c5; }
 .toast--error   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .toast--warn    { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
 .toast--info    { background: var(--clr-primary-50); color: var(--clr-primary-700); border: 1px solid var(--clr-primary-200); }
+
+
+.edit-overlay {
+    margin-top: 9px;
+    position: absolute;
+    inset: -8px;
+    border-radius: 14px;
+    border: 2px dashed #97C459;
+    background: rgba(99, 153, 34, 0.03);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+.edit-overlay.visible { opacity: 1; }
+
+.badge-edit {
+    font-size: 11px;
+    font-weight: 500;
+    background: #EAF3DE;
+    color: #3B6D11;
+    border: 0.5px solid #97C459;
+    border-radius: 6px;
+    padding: 3px 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+.badge-edit.visible { opacity: 1; }
+
+.edit-hint {
+    font-size: 12px;
+    color: var(--clr-surface-400);
+    min-height: 18px;
+    padding-left: 4px;
+    transition: opacity 0.2s;
+}
+
+#btn-switch.active {
+    border: 1.5px solid #3B6D11 ;
+    background: #EAF3DE ;
+    color: #3B6D11 ;
+}
+
+.pool-team-row.clickable  { cursor: crosshair; }
+.pool-team-row.clickable:hover { background: #EAF3DE; }
+.pool-team-row.selected {
+    background: #C0DD97 ;
+    outline: 1.5px solid #3B6D11;
+    outline-offset: -1.5px;
+}
 .toast.leaving  { animation: toastOut .3s var(--ease-out) forwards; }
+
+.pool-card {
+    cursor: pointer;    
+}
+
+.pool-card--active {
+    border-color: var(--clr-primary-400) ;
+    box-shadow: 0 0 0 3px rgba(10, 187, 239, 0.15), 0 2px 12px rgba(15, 29, 20, 0.08);
+}
+
+.pool-card--active .pool-card-head {
+    background: var(--clr-primary-50);
+}
 
 @keyframes toastIn  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes toastOut { to   { opacity: 0; transform: translateX(30px); } }
@@ -592,7 +728,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms ;
+        transition-duration: 0.01ms ;
     }
 }

@@ -57,19 +57,83 @@ document.addEventListener('DOMContentLoaded', () => {
 function traiter_csv_clubs(contenu) {
     const lignes = contenu.split("\n");
     const data = [];
+    const ignores = [];
 
     for (let i = 0; i < lignes.length; i++) {
         if (lignes[i].trim() === "") continue;
 
         const colonnes = lignes[i].split(";");
 
+        const lat = parseFloat(colonnes[2]);
+        const lng = parseFloat(colonnes[3]);
+
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+            ignores.push(colonnes[1]?.trim() || `ligne ${i + 1}`);
+            continue;
+        }
+
         data.push({
-            id: colonnes[0],
-            nom: colonnes[1],
-            latitude: parseFloat(colonnes[2]),
-            longitude: parseFloat(colonnes[3])
+            id: colonnes[0]?.trim(),
+            nom: colonnes[1]?.trim(),
+            latitude: lat,
+            longitude: lng,
         });
     }
 
+    if (ignores.length > 0) {
+        console.warn(`${ignores.length} club(s) ignoré(s) (coordonnées manquantes ou nulles) :`, ignores);
+        toast(`${ignores.length} club(s) ignoré(s) faute de coordonnées : ${ignores.join(', ')}.`, 'warn');
+    }
+
     return data;
-};
+}
+
+
+/* async function traiter_csv_clubs(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    const ignores = [];
+
+    for (let i = 1; i < lignes.length; i++) { // skip header
+        if (lignes[i].trim() === "") continue;
+
+        const colonnes = lignes[i].split(";");
+
+        const id = colonnes[0]?.trim();
+        const nom = colonnes[1]?.trim();
+        const adresse = colonnes[2]?.trim();
+        const ville = colonnes[4]?.trim();
+        const codePostal = colonnes[5]?.trim();
+
+        const adresseComplete = `${adresse}, ${codePostal} ${ville}, France`;
+
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresseComplete)}`);
+            const geo = await res.json();
+
+            if (!geo || geo.length === 0) {
+                ignores.push(nom);
+                continue;
+            }
+
+            const lat = parseFloat(geo[0].lat);
+            const lng = parseFloat(geo[0].lon);
+
+            data.push({
+                id,
+                nom,
+                latitude: lat,
+                longitude: lng,
+            });
+
+        } catch (e) {
+            ignores.push(nom);
+        }
+    }
+
+    if (ignores.length > 0) {
+        console.warn(`${ignores.length} club(s) ignoré(s) :`, ignores);
+    }
+
+    return data;
+}*/

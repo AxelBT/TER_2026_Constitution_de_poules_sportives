@@ -186,7 +186,7 @@ function choisirGrainesOptimisees(equipes, nb_poules, poules,barycentreGlobal) {
     return nonGraines;
 }
 
-function verifierClubDansPoule(poule, equipe) {
+export function verifierClubDansPoule(poule, equipe) {
     return poule.equipes.some(e => e.id_club === equipe.id_club);
 }
 
