@@ -186,7 +186,7 @@ function choisirGrainesOptimisees(equipes, nb_poules, poules,barycentreGlobal) {
     return nonGraines;
 }
 
-function verifierClubDansPoule(poule, equipe) {
+export function verifierClubDansPoule(poule, equipe) {
     return poule.equipes.some(e => e.id_club === equipe.id_club);
 }
 
@@ -429,7 +429,7 @@ function equilibrerDistancesMoyennes(poules) {
 }
 
 
-function calculerDistanceMoyenne(poule) {
+export function calculerDistanceMoyenne(poule) {
     if (poule.equipes.length <= 1) return 0;
 
     let total = 0;
@@ -445,7 +445,7 @@ function calculerDistanceMoyenne(poule) {
     return total / count;
 }
 
-function finaliserStatistiquesPoules(poules) {
+export function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
         poule.equipes.forEach(e => e.distance_totale = 0);
