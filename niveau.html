@@ -126,17 +126,25 @@
         <div class="pools-panel">
             <div class="pools-header">
                 <span class="pools-header-title" id="pools-title">Répartition des poules</span>
+                <span id="conteneur-btn-echange"></span>
+                <span id="badge-edit" class="badge-edit">Mode édition</span>
                 <span class="pools-meta" id="pools-meta"></span>
             </div>
-            <div class="pools-grid" id="pools-grid">
-                <div class="pools-empty">
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                    <p>Les poules apparaîtront ici après génération.</p>
+            <div id="edit-hint" class="edit-hint"></div>
+
+            <!-- Wrapper relatif pour l'overlay pointillé -->
+            <div style="position: relative;">
+                <div id="edit-overlay" class="edit-overlay"></div>
+                <div class="pools-grid" id="pools-grid">
+                    <div class="pools-empty">
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        <p>Les poules apparaîtront ici après génération.</p>
+                    </div>
                 </div>
             </div>
         </div>
