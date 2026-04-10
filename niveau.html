@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration des niveaux</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="niveau.css">
+</head>
+<body>
+
+<!-- ── TOAST ── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+    <div class="topbar-inner">
+        <span class="topbar-brand">Championnat</span>
+        <nav class="topbar-stepper" id="stepper" aria-label="Étapes"></nav>
+    </div>
+</header>
+
+<!-- ── DASHBOARD ── -->
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <!-- Panneau principal : titre + drop zone + params + générer -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title" id="titre-niveau">Niveau 1</span>
+                <span class="badge" id="badge-niveau">1 / 1</span>
+            </div>
+            <div class="panel-body">
+
+                <!-- Drop zone équipes -->
+                <label style="font-size:.73rem;font-weight:700;margin-bottom:var(--space-xs);display:block;color:var(--clr-surface-800)">
+                    Équipes
+                    <span style="font-weight:400;color:var(--clr-surface-400);font-size:.7rem">(CSV : nom_equipe,nom_club)</span>
+                </label>
+                <div class="drop-zone-sm" id="drop-zone-equipes">
+                    <input type="file" id="file_csv_niveau" accept=".csv">
+                    <div class="drop-zone-sm-content" id="drop-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/>
+                        </svg>
+                         <p id="file-label">Glissez votre fichier ici ou <strong>parcourez</strong></p>
+                    </div>
+                </div>
+
+                <!-- Paramètres -->
+                <div class="inline-fields">
+                    <div>
+                        <label for="nb_poules">Nb. poules</label>
+                        <input type="number" id="nb_poules" min="1" max="20" value="8">
+                    </div>
+                    <div>
+                        <label for="nb_max_equipes">Max / poule</label>
+                        <input type="number" id="nb_max_equipes" min="1" max="40" value="5">
+                    </div>
+                </div>
+
+                <!-- Boutons générer -->
+                <div class="btn-generate-row">
+                    <button id="btn-generer-niveau" class="btn-generate btn-generate--half">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                        Par niveau
+                    </button>
+                    <button id="btn-generer-dis" class="btn-generate btn-generate--half btn-generate--alt">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Par distance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="panel" id="panel-stats" style="display:none">
+            <div class="panel-header">
+                <span class="panel-title">Statistiques</span>
+            </div>
+            <div class="panel-body">
+                <div class="stats-grid" id="stats-content"></div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-row">
+            <button class="btn-nav-prev" id="btn-prev">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Retour
+            </button>
+            <button class="btn-nav-next" id="btn-next">
+                Suivant
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-area">
+
+        <!-- Carte -->
+        <div class="map-wrapper">
+            <div id="map"></div>
+            <div class="map-overlay" id="map-overlay">
+                <div class="map-overlay-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <p>Importez un fichier CSV d'équipes et cliquez sur <strong>Générer</strong> pour visualiser la répartition géographique.</p>
+            </div>
+        </div>
+
+        <!-- Grille de poules -->
+        <div class="pools-panel">
+            <div class="pools-header">
+                <span class="pools-header-title" id="pools-title">Répartition des poules</span>
+                <span id="conteneur-btn-echange"></span>
+                <span id="badge-edit" class="badge-edit">Mode édition</span>
+                <span class="pools-meta" id="pools-meta"></span>
+            </div>
+            <div id="edit-hint" class="edit-hint"></div>
+
+            <!-- Wrapper relatif pour l'overlay pointillé -->
+            <div style="position: relative;">
+                <div id="edit-overlay" class="edit-overlay"></div>
+                <div class="pools-grid" id="pools-grid">
+                    <div class="pools-empty">
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        <p>Les poules apparaîtront ici après génération.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="niveau.js" defer></script>
+</body>
+</html>
