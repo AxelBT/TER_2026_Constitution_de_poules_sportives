@@ -215,7 +215,6 @@ function choisirMeilleurePoule(poules, equipe) {
     return meilleure;
 }
 
-
 function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
     poule.barycentre = calculerBarycentre(poule.equipes);
@@ -262,7 +261,7 @@ function tenterSauvetage(poules, equipe) {
     const { p, i, equipeEchange, pCible } = meilleurEchange;
 
     p.equipes.splice(i, 1);
-    p.barycentre       = calculerBarycentre(p.equipes);
+    //p.barycentre       = calculerBarycentre(p.equipes);
     //p.distance_moyenne = calculerDistanceMoyenne(p);
 
     ajouterEquipeDansPoule(pCible, equipeEchange);
@@ -270,7 +269,6 @@ function tenterSauvetage(poules, equipe) {
 
     return true;
 }
-
 
 function verifierSaturationClub(equipes, nb_poules) {
     const count = {};

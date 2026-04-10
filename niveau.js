@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             m.addTo(map);
             m.clubId = c.id_club;
             markers.push(m);
-            bounds.push([lat, lng]);
+            bounds.push([lng, lat]);
         });
 
         if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
