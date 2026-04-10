@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="pool-dot" style="background:${couleur}"></span>
                     Poule ${lettre}
                     <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">
-                        (${poule.equipes.length}/${poule.nb_max})
+                        (${poule.distance_moyenne})
                     </span>
                 </div>
                 ${lignes}

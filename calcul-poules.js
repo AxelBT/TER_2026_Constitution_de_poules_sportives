@@ -450,7 +450,7 @@ function calculerDistanceMoyenne(poule) {
 function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
-
+        poule.equipes.forEach(e => e.distance_totale = 0);
         for (let i = 0; i < n; i++) {
             for (let j = i + 1; j < n; j++) {
                 const d = distance(poule.equipes[i], poule.equipes[j]);
