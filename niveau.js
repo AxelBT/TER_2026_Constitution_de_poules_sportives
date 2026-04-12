@@ -93,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }).toString();
     }
 
-    
 
     /* ====================================================
        LEAFLET
@@ -150,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (config.niveauActuel < config.niveaux) {
             window.location.href = buildURL(config.niveauActuel + 1);
         } else {
-            window.location.href = 'récapitulatif.html?' + new URLSearchParams({
+            window.location.href = 'recapitulatif.html?' + new URLSearchParams({
                 categorie: config.categorie,
                 niveaux: config.niveaux,
                 genre: config.genre,
@@ -166,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             reader.onload = function (e) {
                 const contenu = e.target.result;
+                localStorage.setItem(`csv_niveau${config.niveauActuel}`, contenu);
+                localStorage.setItem(`csv_nom_niveau${config.niveauActuel}`, file.name);
                 const equipes = traiterCSV(contenu);
                 localStorage.setItem("equipes", JSON.stringify(equipes));
                 const nb_poules = parseInt(document.getElementById('nb_poules').value);
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const poules    = generer_poules(equipes, nb_poules, nb_max);
                 afficherCarte(equipes);
                 afficherPoules(poules);
-                localStorage.setItem(`poules_niveau${config.niveauActuel}`, JSON.stringify(poules));
+                localStorage.setItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`, JSON.stringify(poules));
                 toast(`${equipes.length} équipes réparties en ${poules.length} poules.`, 'success');
             };
             reader.readAsText(file);
@@ -418,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="pool-team-row">
                 <span class="pool-team-dot" style="background:${couleur}"></span>
                 <span>${e.nom}</span>
-                <span class="pool-team-club">${e.distance_totale}</span>
+                <span class="pool-team-club">${e.distance_totale} Km</span>
             </div>
         `).join('');
 
@@ -428,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="pool-dot" style="background:${couleur}"></span>
                     Poule ${lettre}
                     <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">
-                        (${poule.distance_moyenne})
+                        (${poule.distance_moyenne.toFixed(0)} km)
                     </span>
                 </div>
                 ${lignes}
@@ -452,7 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     function onGenerer(mode) {
         const clubs = JSON.parse(localStorage.getItem("clubs"));
-        //debugger;
         afficherCarte(clubs);
         afficherPoules([]);
         toast(`${clubs.length} clubs affichés (mode : ${mode === 'niveau' ? 'par niveau' : 'par distance'}).`, 'info');
@@ -467,4 +467,51 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTitre();
     renderStepper();
     setTimeout(() => map.invalidateSize(), 100);
+
+    
+   /* ====================================================
+   RESTAURATION — si les poules de ce niveau existent déjà
+   ==================================================== */
+    const cle = `${config.categorie}-${config.genre}-${config.niveauActuel}`;
+    const poulesStockees = localStorage.getItem(cle);
+
+    if (poulesStockees) {
+        try {
+            const poules = JSON.parse(poulesStockees);
+
+            // Restitue les paramètres dans les champs
+            document.getElementById('nb_poules').value      = poules.length;
+            document.getElementById('nb_max_equipes').value = Math.max(...poules.map(p => p.nb_max));
+
+            // Extrait les équipes directement depuis les poules
+            const equipes = poules.flatMap(p => p.equipes);
+
+            // Restitue le label du fichier
+            //document.getElementById('file-label').innerHTML = '✓ Poules déjà générées pour ce niveau';
+
+            // Affiche la carte et les poules
+            afficherCarte(equipes);
+            afficherPoules(poules);
+            const csvStocke = localStorage.getItem(`csv_niveau${config.niveauActuel}`);
+            const csvNom    = localStorage.getItem(`csv_nom_niveau${config.niveauActuel}`);
+
+            if (csvStocke && csvNom) {
+                // Recrée un vrai File object à partir du contenu stocké
+                const blob = new Blob([csvStocke], { type: 'text/csv' });
+                const file = new File([blob], csvNom, { type: 'text/csv' });
+
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                document.getElementById('file_csv_niveau').files = dt.files;
+
+                document.getElementById('file-label').innerHTML = `✓ ${csvNom}`;
+            }
+            //toast(`Niveau ${config.niveauActuel} — poules restaurées.`, 'info');
+            toast(`Poules déjà générées pour ce niveau`, 'info');
+
+        } catch (err) {
+            console.warn('Erreur lors de la restauration des poules :', err);
+        }
+    }
+
 });
