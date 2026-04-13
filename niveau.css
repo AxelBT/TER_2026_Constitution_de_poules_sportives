@@ -255,6 +255,13 @@ body {
     font-size: .82rem;
 }
 
+
+
+.exempt {
+    background-color: #ab9e9e;
+
+}
+
 /* Boutons générer */
 .btn-generate-row {
     display: flex;

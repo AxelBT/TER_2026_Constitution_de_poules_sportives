@@ -462,7 +462,7 @@ export function finaliserStatistiquesPoules(poules) {
         }
         
         poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(2);
+            e.distance_totale = e.distance_totale.toFixed(3);
         });
     });
 }
