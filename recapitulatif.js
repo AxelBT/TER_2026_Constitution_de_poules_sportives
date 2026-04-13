@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* ====================================================
-       CONFIG — lecture URL
-       ==================================================== */
     const params = new URLSearchParams(window.location.search);
     const config = {
         categorie: params.get('categorie') || 'senior',
@@ -15,9 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '#db2777','#0891b2','#65a30d','#ea580c','#4f46e5',
     ];
 
-    /* ====================================================
-       TOAST
-       ==================================================== */
+    
     const toastContainer = document.getElementById('toast-container');
     const ICONS = {
         success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
@@ -37,9 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3500);
     }
 
-    /* ====================================================
-       STEPPER
-       ==================================================== */
+    
     function renderStepper() {
         const stepper = document.getElementById('stepper');
         const etapes = [
@@ -66,10 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    /* ====================================================
-       CHARGEMENT DES DONNÉES
-       ==================================================== */
-    // Récupère toutes les poules de tous les niveaux depuis localStorage
+    
     function chargerToutesLesPoules() {
         const resultat = [];
         //console.log(localStorage);
@@ -86,9 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return resultat;
     }
 
-    /* ====================================================
-       STATS GLOBALES
-       ==================================================== */
+    
     function calculerStatsGlobales(niveauxData) {
         const totalNiveaux  = niveauxData.length;
         const totalPoules   = niveauxData.reduce((s, n) => s + n.poules.length, 0);
@@ -129,9 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    /* ====================================================
-       SÉLECTEUR SIDEBAR
-       ==================================================== */
+    
     function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
         const container = document.getElementById('niveau-selector');
         container.innerHTML = niveauxData.map(({ niveau, poules }) => {
@@ -151,9 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ====================================================
-       ONGLETS
-       ==================================================== */
+    
     function renderTabs(niveauxData, niveauActif, onSelect) {
         const bar = document.getElementById('tabs-bar');
         bar.innerHTML = niveauxData.map(({ niveau }) => `
@@ -170,9 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ====================================================
-       AFFICHAGE D'UN NIVEAU
-       ==================================================== */
+    
     function afficherNiveau(niveauData) {
         const { niveau, poules } = niveauData;
         const nbEquipes = poules.reduce((s, p) => s + p.equipes.length, 0);
@@ -230,11 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-    /* ====================================================
-       EXPORT EXCEL (SheetJS côté navigateur)
-       ==================================================== */
+    
     function exporterExcel(niveauxData) {
-        // XLSX est chargé via CDN dans le HTML (variable globale XLSX)
         if (typeof XLSX === 'undefined') {
             toast('Bibliothèque Excel non chargée.', 'error');
             return;
@@ -245,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         niveauxData.forEach(({ niveau, poules }) => {
             const rows = [];
 
-            // En-tête du niveau
             rows.push([`${config.categorie.toUpperCase()} — ${config.genre} — Niveau ${niveau}`]);
             rows.push([]); // ligne vide
 
@@ -271,10 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]);
                 });
 
-                rows.push([]); // séparateur entre poules
+                rows.push([]);
             });
 
-            // Crée la feuille
+            // Créer la feuille
             const ws = XLSX.utils.aoa_to_sheet(rows);
 
             // Largeurs de colonnes
@@ -283,10 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 { wch: 20 },
                 { wch: 22 },
             ];
-
-            // Mise en forme : titre niveau (ligne 1) en gras
-            // SheetJS en mode browser ne supporte pas les styles sans plugin payant,
-            // on se contente de la structure qui reste lisible
 
             const nomFeuille = `Niveau ${niveau}`;
             XLSX.utils.book_append_sheet(wb, ws, nomFeuille);
@@ -329,9 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast('Fichier Excel exporté avec succès.', 'success');
     }
 
-    /* ====================================================
-       NAVIGATION
-       ==================================================== */
+    
     document.getElementById('btn-prev').addEventListener('click', () => {
         window.location.href = `niveau.html?` + new URLSearchParams({
             categorie:    config.categorie,
@@ -341,9 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).toString();
     });
 
-    /* ====================================================
-       INIT
-       ==================================================== */
+    //initialisation
     renderStepper();
 
     const niveauxData = chargerToutesLesPoules();
@@ -367,10 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // État : niveau affiché
+    
     let niveauActif = niveauxData[0].niveau;
 
-    // Fonction de sélection d'un niveau (met à jour tout)
     function selectionnerNiveau(n) {
         niveauActif = n;
         const data = niveauxData.find(d => d.niveau === n);
@@ -381,19 +350,16 @@ document.addEventListener('DOMContentLoaded', () => {
         afficherNiveau(data);
     }
 
-    // Stats globales sidebar
+    
     const stats = calculerStatsGlobales(niveauxData);
     afficherStatsGlobales(stats);
 
-    // Rendu initial
     selectionnerNiveau(niveauActif);
 
-    // Export Excel
     document.getElementById('btn-export').addEventListener('click', () => {
         exporterExcel(niveauxData);
     });
 
-    // Niveaux manquants
     const niveauxManquants = [];
     for (let n = 1; n <= config.niveaux; n++) {
         if (!niveauxData.find(d => d.niveau === n)) niveauxManquants.push(n);
