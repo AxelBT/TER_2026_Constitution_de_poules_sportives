@@ -1,7 +1,6 @@
-import { traiterCSV, generer_poules, verifierClubDansPoule, calculerDistanceMoyenne, finaliserStatistiquesPoules } from './calcul-poules.js';
+import { traiterCSV, generer_poules } from './calcul-poules.js';
 
-let selection   = null;
-
+let selection = null;
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -23,6 +22,43 @@ document.addEventListener('DOMContentLoaded', () => {
         '#0abbef', '#2563eb', '#dc2626', '#d97706', '#7c3aed',
         '#db2777', '#0891b2', '#65a30d', '#ea580c', '#4f46e5',
     ];
+
+    /* ====================================================
+       CLÉS LOCALSTORAGE
+       ==================================================== */
+    const CLE_POULES  = `poules_${config.categorie}_${config.genre}_n${config.niveauActuel}`;
+    const CLE_EQUIPES = `equipes_${config.categorie}_${config.genre}_n${config.niveauActuel}`;
+
+    function sauvegarderPoules(poules) {
+        try {
+            localStorage.setItem(CLE_POULES, JSON.stringify({
+                poules,
+                date: new Date().toISOString(),
+            }));
+        } catch (err) {
+            console.warn('Impossible de sauvegarder les poules :', err);
+        }
+    }
+
+    function chargerPoules() {
+        try {
+            const raw = localStorage.getItem(CLE_POULES);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    }
+
+    function effacerSauvegarde() {
+        localStorage.removeItem(CLE_POULES);
+        localStorage.removeItem(CLE_EQUIPES);
+        afficherPoules([]);
+        clearMarkers();
+        document.getElementById('map-overlay').classList.remove('hidden');
+        fileLabel.innerText = 'Glissez votre fichier ici ou parcourez';
+        toast('Sauvegarde effacée.', 'warn');
+    }
 
     /* ====================================================
        TOASTS
@@ -93,16 +129,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }).toString();
     }
 
-    
-
     /* ====================================================
-       LEAFLET
+       LEAFLET — coordonnées d'origine [lng, lat]
        ==================================================== */
     const map = L.map('map').setView([46.6033, 1.8883], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '<a href="https://openstreetmap.org">OpenStreetMap</a>',
         maxZoom: 18,
     }).addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 100);
 
     let markers = [];
 
@@ -111,6 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
         markers = [];
     }
 
+    /* ====================================================
+       NAVIGATION
+       ==================================================== */
     const btnPrev     = document.getElementById('btn-prev');
     const btnNext     = document.getElementById('btn-next');
     const btnsGenerer = document.getElementsByClassName('btn-generate');
@@ -158,28 +197,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    /* ====================================================
+       BOUTONS GÉNÉRER
+       ==================================================== */
     for (const btn of btnsGenerer) {
         btn.addEventListener('click', () => {
-            const fileInput = document.getElementById('file_csv_niveau');
             const file = fileInput.files[0];
+            if (!file) {
+                toast("Veuillez d'abord sélectionner un fichier CSV.", 'warn');
+                return;
+            }
             const reader = new FileReader();
-
             reader.onload = function (e) {
                 const contenu = e.target.result;
                 const equipes = traiterCSV(contenu);
-                localStorage.setItem("equipes", JSON.stringify(equipes));
+
+                localStorage.setItem(CLE_EQUIPES, JSON.stringify(equipes));
+
                 const nb_poules = parseInt(document.getElementById('nb_poules').value);
                 const nb_max    = parseInt(document.getElementById('nb_max_equipes').value);
                 const poules    = generer_poules(equipes, nb_poules, nb_max);
+
                 afficherCarte(equipes);
                 afficherPoules(poules);
-                localStorage.setItem(`poules_niveau${config.niveauActuel}`, JSON.stringify(poules));
+                sauvegarderPoules(poules);
+
                 toast(`${equipes.length} équipes réparties en ${poules.length} poules.`, 'success');
             };
             reader.readAsText(file);
         });
     }
 
+    /* ====================================================
+       CARTE — [lng, lat] comme dans la version d'origine
+       ==================================================== */
     function afficherCarte(equipes) {
         clearMarkers();
         const overlay = document.getElementById('map-overlay');
@@ -204,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 opacity: 1,
                 fillOpacity: 0.6,
             });
-            m.bindPopup(`<strong>${c.nom}</strong><br><span style="color:#888"> Club ${c.id_club}</span>`);
+            m.bindPopup(`<strong>${c.nom}</strong><br><span style="color:#888">Club ${c.id_club}</span>`);
             m.addTo(map);
             m.clubId = c.id_club;
             markers.push(m);
@@ -220,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
     highlightPoule._actif = null;
 
     function highlightPoule(pouleIndex, poules) {
-        // Reclic sur la même poule → reset
         if (highlightPoule._actif === pouleIndex) {
             highlightPoule._actif = null;
             resetMarkers();
@@ -236,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         markers.forEach(m => {
             if (idsPoule.has(m.clubId)) {
                 m.setStyle({ fillColor: couleur, fillOpacity: 0.95, radius: 11, color: '#fff', weight: 2.5 });
-                debugger;
-                m.bindPopup(`<strong>${poule.equipes.find((e) => e.id_club ===m.clubId ).nom}</strong><br><span style="color:#888"> Club ${m.clubId}</span>`);
+                const equipe = poule.equipes.find(e => e.id_club === m.clubId);
+                m.bindPopup(`<strong>${equipe?.nom ?? m.clubId}</strong><br><span style="color:#888">Club ${m.clubId}</span>`);
                 m.bringToFront();
             } else {
                 m.setStyle({ fillColor: '#888780', fillOpacity: 0.2, radius: 7, color: '#fff', weight: 1.5 });
@@ -248,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.toggle('pool-card--active', i === pouleIndex);
         });
 
-        // Recentre sur les équipes de la poule sélectionnée
         const pBounds = markers
             .filter(m => idsPoule.has(m.clubId))
             .map(m => m.getLatLng());
@@ -283,95 +332,75 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.classList.toggle('visible', actif);
         hint.textContent = actif ? 'Cliquez sur deux équipes pour les échanger.' : '';
 
-        document.querySelectorAll('.pool-team-row').forEach(el => {
-            el.classList.toggle('clickable', actif);
-            el.classList.remove('selected');
-        });
-
-        // En entrant en mode édition, reset le highlight carte
         if (actif) {
             highlightPoule._actif = null;
             resetMarkers();
             document.querySelectorAll('.pool-card').forEach(c => c.classList.remove('pool-card--active'));
-            attacherListeners(poules);
+            afficherPoules(poules);
+        } else {
+            afficherPoules(poules);
         }
     }
 
-    function attacherListeners(poules) {
-    document.querySelectorAll('.pool-team-row.clickable').forEach(el => {
+    function attacherListenersEdition(poules) {
+        document.querySelectorAll('.pool-team-row').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // Bloque systématiquement la remontée vers .pool-card
+                e.stopPropagation();
 
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
+                const pi  = Number(el.dataset.pouleIndex);
+                const eid = el.dataset.equipeId;
+                if (isNaN(pi) || !eid) return;
 
-            const pi  = Number(el.dataset.pouleIndex);
-            const eid = el.dataset.equipeId;
+                // 1ère sélection
+                if (!selection) {
+                    selection = { pi, eid, el };
+                    el.classList.add('selected');
+                    const hint = document.getElementById('edit-hint');
+                    if (hint) hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
+                    return;
+                }
 
-            // Sécurité DOM
-            if (isNaN(pi) || !eid) return;
+                // Même équipe → désélection
+                if (selection.eid === eid) {
+                    selection.el.classList.remove('selected');
+                    selection = null;
+                    const hint = document.getElementById('edit-hint');
+                    if (hint) hint.textContent = 'Cliquez sur deux équipes pour les échanger.';
+                    return;
+                }
 
-            // 1ère sélection
-            if (!selection) {
-                selection = { pi, eid, el };
+                // 2ème sélection → swap
+                const sel = selection;
                 el.classList.add('selected');
 
-                const hint = document.getElementById('edit-hint');
-                if (hint) {
-                    hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-                }
-                return;
-            }
+                setTimeout(() => {
+                    if (!sel) return;
+                    const pA = poules[sel.pi];
+                    const pB = poules[pi];
+                    if (!pA || !pB) return;
 
-            // Même équipe → désélection
-            if (selection.eid === eid) {
-                selection.el.classList.remove('selected');
-                selection = null;
+                    const iA = pA.equipes.findIndex(e => e.id === sel.eid);
+                    const iB = pB.equipes.findIndex(e => e.id === eid);
+                    if (iA === -1 || iB === -1) return;
 
-                const hint = document.getElementById('edit-hint');
-                if (hint) {
-                    hint.textContent = 'Cliquez sur deux équipes pour les échanger.';
-                }
-                return;
-            }
+                    [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
 
-            // Capture locale pour éviter NULL dans setTimeout
-            const sel = selection;
+                    selection = null;
+                    afficherPoules(poules);
+                    sauvegarderPoules(poules);
 
-            el.classList.add('selected');
-
-            setTimeout(() => {
-                if (!sel) return;
-
-                const pA = poules[sel.pi];
-                const pB = poules[pi];
-
-                if (!pA || !pB) return;
-
-                const iA = pA.equipes.findIndex(e => e.id === sel.eid);
-                const iB = pB.equipes.findIndex(e => e.id === eid);
-
-                if (iA === -1 || iB === -1) return;
-
-                [pA.equipes[iA], pB.equipes[iB]] =
-                [pB.equipes[iB], pA.equipes[iA]];
-
-                selection = null;
-                poules[sel.pi].distance_moyenne = calculerDistanceMoyenne(poules[sel.pi]);
-                poules[pi].distance_moyenne = calculerDistanceMoyenne(poules[pi]);
-                finaliserStatistiquesPoules(poules);
-                afficherPoules(poules);
-
-                const hint = document.getElementById('edit-hint');
-                if (hint) {
-                    hint.textContent = '✓ Échange effectué.';
-                    setTimeout(() => {
-                        hint.textContent = 'Cliquez sur deux équipes pour les échanger.';
-                    }, 250);
-                }
-
-            }, 120);
+                    const hint = document.getElementById('edit-hint');
+                    if (hint) {
+                        hint.textContent = '✓ Échange effectué.';
+                        setTimeout(() => {
+                            if (modeEdition) hint.textContent = 'Cliquez sur deux équipes pour les échanger.';
+                        }, 2500);
+                    }
+                }, 120);
+            });
         });
-    });
-}
+    }
 
     /* ====================================================
        GRILLE DE POULES
@@ -381,7 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const meta       = document.getElementById('pools-meta');
         const btnEchange = document.getElementById('conteneur-btn-echange');
 
-        // Reset highlight à chaque re-rendu (ex : après un swap)
         highlightPoule._actif = null;
 
         if (!poules.length) {
@@ -410,17 +438,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Reconstruction du DOM — les listeners précédents sont détruits avec les anciens éléments
         grid.innerHTML = poules.map((poule, pi) => {
             const lettre  = poule.nom || String.fromCharCode(65 + pi);
             const couleur = PALETTE[pi % PALETTE.length];
 
             const lignes = poule.equipes.map(e => `
-            <div class="pool-team-row">
-                <span class="pool-team-dot" style="background:${couleur}"></span>
-                <span>${e.nom}</span>
-                <span class="pool-team-club">${e.distance_totale}</span>
-            </div>
-        `).join('');
+                <div class="pool-team-row${modeEdition ? ' clickable' : ''}"
+                     data-poule-index="${pi}"
+                     data-equipe-id="${e.id}">
+                    <span class="pool-team-dot" style="background:${couleur}"></span>
+                    <span>${e.nom}</span>
+                    <span class="pool-team-club">${e.distance_totale ?? ''}</span>
+                </div>
+            `).join('');
 
             return `
             <div class="pool-card" data-poule-index="${pi}">
@@ -435,24 +466,22 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }).join('');
 
-        // Listeners clic sur les cards pour highlight carte (hors mode édition)
-        document.querySelectorAll('.pool-card').forEach((card, i) => {
-            card.addEventListener('click', () => {
-                if (modeEdition) return;
-                highlightPoule(i, poules);
+        if (modeEdition) {
+            // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
+            attacherListenersEdition(poules);
+        } else {
+            // Mode normal : listener highlight carte sur les cards uniquement
+            document.querySelectorAll('.pool-card').forEach((card, i) => {
+                card.addEventListener('click', () => highlightPoule(i, poules));
             });
-        });
-
-        // Listeners mode édition si actif
-        if (modeEdition) attacherListeners(poules);
+        }
     }
 
     /* ====================================================
-       BOUTONS GÉNÉRER
+       BOUTONS GÉNÉRER (démo clubs)
        ==================================================== */
     function onGenerer(mode) {
-        const clubs = JSON.parse(localStorage.getItem("clubs"));
-        //debugger;
+        const clubs = JSON.parse(localStorage.getItem('clubs'));
         afficherCarte(clubs);
         afficherPoules([]);
         toast(`${clubs.length} clubs affichés (mode : ${mode === 'niveau' ? 'par niveau' : 'par distance'}).`, 'info');
@@ -466,5 +495,25 @@ document.addEventListener('DOMContentLoaded', () => {
        ==================================================== */
     updateTitre();
     renderStepper();
-    setTimeout(() => map.invalidateSize(), 100);
+
+    const btnEffacer = document.getElementById('btn-effacer');
+    if (btnEffacer) btnEffacer.addEventListener('click', effacerSauvegarde);
+
+    // Restauration au chargement
+    const sauvegarde = chargerPoules();
+    const equipesRaw = localStorage.getItem(CLE_EQUIPES);
+
+    if (sauvegarde && equipesRaw) {
+        const poules  = sauvegarde.poules;
+        const equipes = JSON.parse(equipesRaw);
+        const date    = new Date(sauvegarde.date).toLocaleString('fr-FR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
+
+        afficherCarte(equipes);
+        afficherPoules(poules);
+        fileLabel.innerText = `✓ Restauré — sauvegarde du ${date}`;
+        toast(`Niveau ${config.niveauActuel} restauré (${equipes.length} équipes — ${date}).`, 'info');
+    }
 });

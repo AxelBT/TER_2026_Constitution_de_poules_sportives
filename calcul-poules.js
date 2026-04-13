@@ -431,7 +431,7 @@ function equilibrerDistancesMoyennes(poules) {
 }
 
 
-function calculerDistanceMoyenne(poule) {
+export function calculerDistanceMoyenne(poule) {
     if (poule.equipes.length <= 1) return 0;
 
     let total = 0;
@@ -447,7 +447,7 @@ function calculerDistanceMoyenne(poule) {
     return total / count;
 }
 
-function finaliserStatistiquesPoules(poules) {
+export function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
 
