@@ -4,6 +4,7 @@ import {
   verifierClubDansPoule,
   calculerDistanceMoyenne,
   finaliserStatistiquesPoules,
+  calculerBarycentre,
 } from "./calcul-poules.js";
 
 let selection = null;
@@ -515,10 +516,14 @@ document.addEventListener("DOMContentLoaded", () => {
           const iB = pB.equipes.findIndex((e) => e.id === eid);
           if (iA === -1 || iB === -1) return;
 
-          if (pA.equipes[iA].id_club === pB.equipes[iB].id_club)
+          if ((pA.equipes[iA].id_club === pB.equipes[iB].id_club) || (!verifierClubDansPoule(pA, pB.equipes[iB]) && !verifierClubDansPoule(pB, pA.equipes[iA]))){
             [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
-          else if (!verifierClubDansPoule(pA, pB.equipes[iB]) && !verifierClubDansPoule(pB, pA.equipes[iA]))
-            [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
+            poules[sel.pi].distance_moyenne= calculerDistanceMoyenne(poules[sel.pi]);
+            poules[pi].distance_moyenne= calculerDistanceMoyenne(poules[pi]);
+            poules[sel.pi].barycentre = calculerBarycentre(poules[sel.pi].equipes);
+            poules[pi].barycentre = calculerBarycentre(poules[pi].equipes);
+            finaliserStatistiquesPoules(poules);
+          }
           else 
             toast(
             `Une équipe de ce club appartient déjà à cette poule`,
@@ -671,8 +676,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span class="pool-team-club">${e.distance_totale} Km</span>
                 </div>
             `).join('');
-            //console.log(poule.equipes.length);
-            //console.log(poule.nb_max);
 
             if(poule.equipes.length < nb_max_equipes ){
                 lignes += `<div class="pool-team-row${modeEdition ? ' clickable' : ''} exempt">
