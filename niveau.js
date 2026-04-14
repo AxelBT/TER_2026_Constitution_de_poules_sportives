@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
           color: "#fff",
           weight: 2.5,
         });
-        
+
         m.bindPopup(
           `<strong>${poule.equipes.find((e) => e.id_club === m.clubId).nom}</strong><br><span style="color:#888"> Club ${m.clubId}</span>`,
         );
@@ -515,14 +515,19 @@ document.addEventListener("DOMContentLoaded", () => {
           const iB = pB.equipes.findIndex((e) => e.id === eid);
           if (iA === -1 || iB === -1) return;
 
-          if (pA.equipes[iA].id_club === pB.equipes[iB].id_club)
+          if (pA.equipes[iA].id_club === pB.equipes[iB].id_club) {
             [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
-          else if (!verifierClubDansPoule(pA, pB.equipes[iB]) && !verifierClubDansPoule(pB, pA.equipes[iA]))
+            toast(`Echange réussi`, "success");
+          } else if (
+            !verifierClubDansPoule(pA, pB.equipes[iB]) &&
+            !verifierClubDansPoule(pB, pA.equipes[iA])
+          ) {
             [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
-          else 
+            toast(`Echange réussi`, "success");
+          } else
             toast(
-            `Une équipe de ce club appartient déjà à cette poule`,
-            "error",
+              `Une équipe de ce club appartient déjà à cette poule`,
+              "error",
             );
 
           selection = null;
@@ -623,16 +628,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modeEdition) attacherListeners(poules);
   }*/
 
-    function afficherPoules(poules) {
-        const grid       = document.getElementById('pools-grid');
-        const meta       = document.getElementById('pools-meta');
-        const btnEchange = document.getElementById('conteneur-btn-echange');
+  function afficherPoules(poules) {
+    const grid = document.getElementById("pools-grid");
+    const meta = document.getElementById("pools-meta");
+    const btnEchange = document.getElementById("conteneur-btn-echange");
 
-        highlightPoule._actif = null;
+    highlightPoule._actif = null;
 
-        if (!poules.length) {
-            meta.textContent = '';
-            grid.innerHTML = `
+    if (!poules.length) {
+      meta.textContent = "";
+      grid.innerHTML = `
             <div class="pools-empty">
                 <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -642,46 +647,51 @@ document.addEventListener("DOMContentLoaded", () => {
                 </svg>
                 <p>Les poules apparaîtront ici après génération.</p>
             </div>`;
-            return;
-        }
+      return;
+    }
 
-        const totalEq = poules.reduce((s, p) => s + p.equipes.length, 0);
-        meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
+    const totalEq = poules.reduce((s, p) => s + p.equipes.length, 0);
+    meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
 
-        // Créer le bouton une seule fois
-        if (btnEchange && !document.getElementById('btn-switch')) {
-            btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
-            document.getElementById('btn-switch').addEventListener('click', () => {
-                setModeEdition(!modeEdition, poules);
-            });
-        }
+    // Créer le bouton une seule fois
+    if (btnEchange && !document.getElementById("btn-switch")) {
+      btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
+      document.getElementById("btn-switch").addEventListener("click", () => {
+        setModeEdition(!modeEdition, poules);
+      });
+    }
 
-        // Reconstruction du DOM — les listeners précédents sont détruits avec les anciens éléments
-        const nb_max_equipes = Math.max(...poules.map((p) => p.nb_max));
-        grid.innerHTML = poules.map((poule, pi) => {
-            const lettre  = poule.nom || String.fromCharCode(65 + pi);
-            const couleur = PALETTE[pi % PALETTE.length];
-            
-            let lignes = poule.equipes.map(e => `
-                <div class="pool-team-row${modeEdition ? ' clickable' : ''}"
+    // Reconstruction du DOM — les listeners précédents sont détruits avec les anciens éléments
+    const nb_max_equipes = Math.max(...poules.map((p) => p.nb_max));
+    grid.innerHTML = poules
+      .map((poule, pi) => {
+        const lettre = poule.nom || String.fromCharCode(65 + pi);
+        const couleur = PALETTE[pi % PALETTE.length];
+
+        let lignes = poule.equipes
+          .map(
+            (e) => `
+                <div class="pool-team-row${modeEdition ? " clickable" : ""}"
                      data-poule-index="${pi}"
                      data-equipe-id="${e.id}">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
                     <span>${e.nom}</span>
                     <span class="pool-team-club">${e.distance_totale} Km</span>
                 </div>
-            `).join('');
-            //console.log(poule.equipes.length);
-            //console.log(poule.nb_max);
+            `,
+          )
+          .join("");
+        //console.log(poule.equipes.length);
+        //console.log(poule.nb_max);
 
-            if(poule.equipes.length < nb_max_equipes ){
-                lignes += `<div class="pool-team-row${modeEdition ? ' clickable' : ''} exempt">
+        if (poule.equipes.length < nb_max_equipes) {
+          lignes += `<div class="pool-team-row${modeEdition ? " clickable" : ""} exempt">
                 <span>exempt</span>
-                </div>` 
-            }
-            
-            //debugger;
-            return `
+                </div>`;
+        }
+
+        //debugger;
+        return `
             <div class="pool-card" data-poule-index="${pi}">
                 <div class="pool-card-head">
                     <span class="pool-dot" style="background:${couleur}"></span>
@@ -692,18 +702,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 ${lignes}
             </div>`;
-        }).join('');
+      })
+      .join("");
 
-        if (modeEdition) {
-            // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
-            attacherListenersEdition(poules);
-        } else {
-            // Mode normal : listener highlight carte sur les cards uniquement
-            document.querySelectorAll('.pool-card').forEach((card, i) => {
-                card.addEventListener('click', () => highlightPoule(i, poules));
-            });
-        }
+    if (modeEdition) {
+      // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
+      attacherListenersEdition(poules);
+    } else {
+      // Mode normal : listener highlight carte sur les cards uniquement
+      document.querySelectorAll(".pool-card").forEach((card, i) => {
+        card.addEventListener("click", () => highlightPoule(i, poules));
+      });
     }
+  }
   /* ====================================================
        BOUTONS GÉNÉRER
        ==================================================== */
