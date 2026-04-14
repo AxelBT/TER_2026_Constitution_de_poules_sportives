@@ -1,7 +1,6 @@
 let config = JSON.parse(localStorage.getItem('championnatConfig'));
 const clubs = JSON.parse(localStorage.getItem("clubs"));
 
-//console.log(clubs);
 
 if (!config) {
     window.location.href = 'poule.html'; 
@@ -51,7 +50,8 @@ export function traiterCSV(contenu) {
             console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
             
             // On peut décider de stopper le traitement ou d'ignorer l'équipe
-            continue; 
+            toast("imposssible de générer","error");
+            return; 
         }
 
         data.push({
@@ -84,7 +84,7 @@ function distance(e1, e2) {
 }
 
 // Barycentre géographique d'un tableau d'équipes
-function calculerBarycentre(equipes) {
+export function calculerBarycentre(equipes) {
     if (equipes.length === 0) return null;
 
     const total = equipes.reduce((acc, e) => {
@@ -99,7 +99,7 @@ function calculerBarycentre(equipes) {
     };
 }
 
-function definirCapacitesPoules(nb_poules, total_equipes) {
+/*function definirCapacitesPoules(nb_poules, total_equipes) {
     const base = Math.floor(total_equipes / nb_poules);
     const reste = total_equipes % nb_poules;
 
@@ -111,6 +111,24 @@ function definirCapacitesPoules(nb_poules, total_equipes) {
         } else {
             capacites.push(base);
         }
+    }
+
+    return capacites;
+}*/
+
+function definirCapacitesPoules(nb_poules, total_equipes) {
+    const base  = Math.floor(total_equipes / nb_poules);
+    const reste = total_equipes % nb_poules;
+
+    let capacites = [
+        ...Array(reste).fill(base + 1),
+        ...Array(nb_poules - reste).fill(base)
+    ];
+
+    // Mélange aléatoire (Fisher-Yates)
+    for (let i = capacites.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [capacites[i], capacites[j]] = [capacites[j], capacites[i]];
     }
 
     return capacites;
@@ -129,7 +147,7 @@ function initialiserPoules(nb_poules, niveau, capacites) {
     }));
 }
 
-function trierParTailleClub(equipes) {
+/*function trierParTailleClub(equipes) {
     const count = {};
     equipes.forEach(e => {
         count[e.id_club] = (count[e.id_club] || 0) + 1;
@@ -139,7 +157,7 @@ function trierParTailleClub(equipes) {
     return equipes.sort((a, b) => {
         return count[b.id_club] - count[a.id_club];
     });
-}
+}*/
 
 function trierParIsolement(equipes, centreGlobal) {
     return [...equipes].sort((a, b) => {
@@ -215,6 +233,7 @@ function choisirMeilleurePoule(poules, equipe) {
     return meilleure;
 }
 
+
 function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
     poule.barycentre = calculerBarycentre(poule.equipes);
@@ -261,7 +280,7 @@ function tenterSauvetage(poules, equipe) {
     const { p, i, equipeEchange, pCible } = meilleurEchange;
 
     p.equipes.splice(i, 1);
-    //p.barycentre       = calculerBarycentre(p.equipes);
+    p.barycentre       = calculerBarycentre(p.equipes);
     //p.distance_moyenne = calculerDistanceMoyenne(p);
 
     ajouterEquipeDansPoule(pCible, equipeEchange);
@@ -269,6 +288,7 @@ function tenterSauvetage(poules, equipe) {
 
     return true;
 }
+
 
 function verifierSaturationClub(equipes, nb_poules) {
     const count = {};
@@ -460,7 +480,7 @@ export function finaliserStatistiquesPoules(poules) {
         }
         
         poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(2);
+            e.distance_totale = e.distance_totale.toFixed(3);
         });
     });
 }
