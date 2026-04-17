@@ -432,4 +432,99 @@ input[type="number"]::-webkit-outer-spin-button {
         grid-template-columns: 1fr;
         gap: var(--space-md);
     }
+}/* ============================================
+   Ssélection du mode
+   ============================================ */
+
+   /* Container - Légèrement ajusté pour épouser les bordures de vos boutons */
+.toggle-container {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.04); /* Fond très subtil pour délimiter la zone */
+    padding: 4px;
+    border-radius: calc(var(--radius-md) + 4px); /* S'adapte à votre radius */
+    margin-top: 8px;
+}
+
+/* Cache les radios natifs */
+.toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* --- STYLE DE BASE (Éléments inactifs) --- */
+.toggle-label {
+    flex: 1;
+    
+    /* Reprise de VOS dimensions et alignements */
+    height: 44px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    /* Reprise de VOTRE typographie */
+    font-family: var(--ff-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: #64748b; /* Couleur discrète pour les inactifs */
+
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    user-select: none;
+
+    /* Reprise de VOS transitions, avec des fallbacks (0.2s) au cas où */
+    transition: 
+        transform var(--dur, 0.2s) var(--ease-out, ease),
+        box-shadow var(--dur, 0.2s) ease,
+        filter var(--dur, 0.2s) ease,
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+/* Hover sur un élément inactif */
+.toggle-label:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--clr-primary-600);
+}
+
+/* --- STYLE ACTIF (L'option sélectionnée) --- */
+.toggle-input:checked + .toggle-label {
+    /* Application de VOTRE design de bouton */
+    background: linear-gradient(135deg, var(--clr-primary-600), var(--clr-primary-500));
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Hover sur l'élément actif */
+.toggle-input:checked + .toggle-label:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    filter: brightness(1.05);
+}
+
+/* Clic sur l'élément actif */
+.toggle-input:checked + .toggle-label:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    filter: brightness(0.95);
+}
+
+/* Accessibilité (Focus clavier) */
+.toggle-input:focus-visible + .toggle-label {
+    outline: 2px solid var(--clr-primary-300);
+    outline-offset: 2px;
+}
+
+/* --- ANIMATION DES ICONES --- */
+.toggle-label svg {
+    transition: transform var(--dur, 0.2s) ease;
+}
+
+/* Petit effet de "pop" sur l'icône quand on la sélectionne */
+.toggle-input:checked + .toggle-label svg {
+    transform: scale(1.15) rotate(5deg);
 }
