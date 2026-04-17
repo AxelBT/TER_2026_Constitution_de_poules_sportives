@@ -341,8 +341,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
+      afficherPoules(poules);
+    } else {
+      afficherPoules(poules);
     }
-    afficherPoules(poules);
   }
 
   function attacherListenersEdition(poules) {
@@ -471,6 +473,11 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selection = null;
           afficherPoules(poules);
+          localStorage.setItem(
+          `${config.categorie}-${config.genre}-${config.niveauActuel}`,
+          JSON.stringify(poules),
+        );
+          //sauvegarderPoules(poules);
 
           const hint = document.getElementById("edit-hint");
           if (hint) {
@@ -486,8 +493,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ── GRILLE DE POULES ───────────────────────────────────────────────────── */
- 
+  /* ====================================================
+       GRILLE DE POULES
+       ==================================================== */
+
   function afficherPoules(poules) {
     const grid = document.getElementById("pools-grid");
     const meta = document.getElementById("pools-meta");
@@ -517,7 +526,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnEchange && !document.getElementById("btn-switch")) {
       btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
       document.getElementById("btn-switch").addEventListener("click", () => {
-        setModeEdition(!modeEdition, poules);
+        const p = JSON.parse(localStorage.getItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`));
+        console.log(p);
+        setModeEdition(!modeEdition, p);
       });
     }
 
