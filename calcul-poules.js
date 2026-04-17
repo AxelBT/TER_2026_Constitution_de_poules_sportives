@@ -509,6 +509,10 @@ export function calculerDistanceMoyenne(poule) {
 export function finaliserStatistiquesPoules(poules) {
     poules.forEach(poule => {
         const n = poule.equipes.length;
+        const distancesAuCentre = poule.equipes.map(e => distance(e, poule.barycentre));
+        const moyDistCentre = distancesAuCentre.reduce((s, d) => s + d, 0) / (n || 1);
+        const variance = distancesAuCentre.reduce((s, d) => s + Math.pow(d - moyDistCentre, 2), 0) / (n || 1);
+        poule.ecart_type = Math.sqrt(variance);
         poule.equipes.forEach(e => e.distance_totale = 0);
         for (let i = 0; i < n; i++) {
             for (let j = i + 1; j < n; j++) {

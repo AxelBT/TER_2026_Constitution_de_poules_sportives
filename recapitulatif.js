@@ -235,11 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const cartes = poules.map((poule, pi) => {
             const couleur = PALETTE[pi % PALETTE.length];
             const lettre  = poule.nom || String.fromCharCode(65 + pi);
-            const n = poule.equipes.length;
-            const distancesAuCentre = poule.equipes.map(e => distance(e, poule.barycentre));
-            const moyDistCentre = distancesAuCentre.reduce((s, d) => s + d, 0) / (n || 1);
-            const variance = distancesAuCentre.reduce((s, d) => s + Math.pow(d - moyDistCentre, 2), 0) / (n || 1);
-            const ecartType = Math.sqrt(variance);
             const lignes = poule.equipes.map(e => `
                 <div class="pool-team-row">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
@@ -269,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
                         </div>
                         <div style="font-size:0.7rem; color:#888; font-weight:normal">
-                            σ: ${ecartType.toFixed(1)} (Écart-type)
+                            σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
                         </div>
                     </div>
                 </div>

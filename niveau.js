@@ -595,6 +595,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
                             Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
                         </div>
+                        <div style="font-size:0.7rem; color:#888; font-weight:normal">
+                            σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
+                        </div>
                     </div>
                 </div>
                 ${lignes}
