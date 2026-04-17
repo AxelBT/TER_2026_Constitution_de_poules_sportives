@@ -339,117 +339,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ====================================================
        MODE ÉDITION — SWAP D'ÉQUIPES
        ==================================================== */
-  /*let modeEdition = false;
-
-  function setModeEdition(actif, poules) {
-    modeEdition = actif;
-    selection = null;
-
-    const btn = document.getElementById("btn-switch");
-    const badge = document.getElementById("badge-edit");
-    const hint = document.getElementById("edit-hint");
-    const overlay = document.getElementById("edit-overlay");
-
-    btn.classList.toggle("active", actif);
-    btn.textContent = actif
-      ? "✕ Terminer la modification"
-      : "Modifier les poules";
-    badge.classList.toggle("visible", actif);
-    overlay.classList.toggle("visible", actif);
-    hint.textContent = actif
-      ? "Cliquez sur deux équipes pour les échanger."
-      : "";
-
-    document.querySelectorAll(".pool-team-row").forEach((el) => {
-      el.classList.toggle("clickable", actif);
-      el.classList.remove("selected");
-    });
-
-    // En entrant en mode édition, reset le highlight carte
-    if (actif) {
-      highlightPoule._actif = null;
-      resetMarkers();
-      document
-        .querySelectorAll(".pool-card")
-        .forEach((c) => c.classList.remove("pool-card--active"));
-      attacherListeners(poules);
-    }
-  }
-
-  function attacherListeners(poules) {
-    document.querySelectorAll(".pool-team-row.clickable").forEach((el) => {
-      el.addEventListener("click", (e) => {
-        e.stopPropagation();
-
-        const pi = Number(el.dataset.pouleIndex);
-        const eid = el.dataset.equipeId;
-
-        // Sécurité DOM
-        if (isNaN(pi) || !eid) return;
-
-        // 1ère sélection
-        if (!selection) {
-          selection = { pi, eid, el };
-          el.classList.add("selected");
-
-          const hint = document.getElementById("edit-hint");
-          if (hint) {
-            hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-          }
-          return;
-        }
-
-        // Même équipe → désélection
-        if (selection.eid === eid) {
-          selection.el.classList.remove("selected");
-          selection = null;
-
-          const hint = document.getElementById("edit-hint");
-          if (hint) {
-            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-          }
-          return;
-        }
-
-        // Capture locale pour éviter NULL dans setTimeout
-        const sel = selection;
-
-        el.classList.add("selected");
-
-        setTimeout(() => {
-          if (!sel) return;
-
-          const pA = poules[sel.pi];
-          const pB = poules[pi];
-
-          if (!pA || !pB) return;
-
-          const iA = pA.equipes.findIndex((e) => e.id === sel.eid);
-          const iB = pB.equipes.findIndex((e) => e.id === eid);
-
-          if (iA === -1 || iB === -1) return;
-
-          [pA.equipes[iA], pB.equipes[iB]] = [pB.equipes[iB], pA.equipes[iA]];
-
-          selection = null;
-          poules[sel.pi].distance_moyenne = calculerDistanceMoyenne(
-            poules[sel.pi],
-          );
-          poules[pi].distance_moyenne = calculerDistanceMoyenne(poules[pi]);
-          finaliserStatistiquesPoules(poules);
-          afficherPoules(poules);
-
-          const hint = document.getElementById("edit-hint");
-          if (hint) {
-            hint.textContent = "✓ Échange effectué.";
-            setTimeout(() => {
-              hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-            }, 250);
-          }
-        }, 120);
-      });
-    });
-  }*/
   let modeEdition = false;
 
   function setModeEdition(actif, poules) {
@@ -604,6 +493,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selection = null;
           afficherPoules(poules);
+          localStorage.setItem(
+          `${config.categorie}-${config.genre}-${config.niveauActuel}`,
+          JSON.stringify(poules),
+        );
           //sauvegarderPoules(poules);
 
           const hint = document.getElementById("edit-hint");
@@ -623,82 +516,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ====================================================
        GRILLE DE POULES
        ==================================================== */
-  /*function afficherPoules(poules) {
-    const grid = document.getElementById("pools-grid");
-    const meta = document.getElementById("pools-meta");
-    const btnEchange = document.getElementById("conteneur-btn-echange");
-
-    // Reset highlight à chaque re-rendu (ex : après un swap)
-    highlightPoule._actif = null;
-
-    if (!poules.length) {
-      meta.textContent = "";
-      grid.innerHTML = `
-            <div class="pools-empty">
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                </svg>
-                <p>Les poules apparaîtront ici après génération.</p>
-            </div>`;
-      return;
-    }
-
-    const totalEq = poules.reduce((s, p) => s + p.equipes.length, 0);
-    meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
-
-    // Créer le bouton une seule fois
-    if (btnEchange && !document.getElementById("btn-switch")) {
-      btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
-      document.getElementById("btn-switch").addEventListener("click", () => {
-        setModeEdition(!modeEdition, poules);
-      });
-    }
-
-    grid.innerHTML = poules
-      .map((poule, pi) => {
-        const lettre = poule.nom || String.fromCharCode(65 + pi);
-        const couleur = PALETTE[pi % PALETTE.length];
-
-        const lignes = poule.equipes
-          .map(
-            (e) => `
-            <div class="pool-team-row">
-                <span class="pool-team-dot" style="background:${couleur}"></span>
-                <span>${e.nom}</span>
-                <span class="pool-team-club">${e.distance_totale} Km</span>
-            </div>
-        `,
-          )
-          .join("");
-
-        return `
-            <div class="pool-card" data-poule-index="${pi}">
-                <div class="pool-card-head">
-                    <span class="pool-dot" style="background:${couleur}"></span>
-                    Poule ${lettre}
-                    <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">
-                        (${poule.distance_moyenne.toFixed(0)} km)
-                    </span>
-                </div>
-                ${lignes}
-            </div>`;
-      })
-      .join("");
-
-    // Listeners clic sur les cards pour highlight carte (hors mode édition)
-    document.querySelectorAll(".pool-card").forEach((card, i) => {
-      card.addEventListener("click", () => {
-        if (modeEdition) return;
-        highlightPoule(i, poules);
-      });
-    });
-
-    // Listeners mode édition si actif
-    if (modeEdition) attacherListeners(poules);
-  }*/
 
   function afficherPoules(poules) {
     const grid = document.getElementById("pools-grid");
@@ -729,7 +546,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnEchange && !document.getElementById("btn-switch")) {
       btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
       document.getElementById("btn-switch").addEventListener("click", () => {
-        setModeEdition(!modeEdition, poules);
+        const p = JSON.parse(localStorage.getItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`));
+        console.log(p);
+        setModeEdition(!modeEdition, p);
       });
     }
 

@@ -526,34 +526,6 @@ export function finaliserStatistiquesPoules(poules) {
     });
 }
 
-/*function finaliserStatistiquesPoules(poules) {
-    poules.forEach(poule => {
-        let sommeDistancesPoule = 0;
-        let nbPaires = 0;
-        const n = poule.equipes.length;
-
-        //poule.equipes.forEach(e => e.distance_totale = 0);
-
-        for (let i = 0; i < n; i++) {
-            for (let j = i + 1; j < n; j++) {
-                const d = distance(poule.equipes[i], poule.equipes[j]);
-                
-                poule.equipes[i].distance_totale += d;
-                poule.equipes[j].distance_totale += d;
-
-                //sommeDistancesPoule += d;
-                //nbPaires++;
-            }
-        }
-
-        //poule.distance_moyenne = nbPaires > 0 ? (sommeDistancesPoule / nbPaires).toFixed(2) : 0;
-        
-        poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(2);
-        });
-    });
-}*/
-
 
 export function generer_poules(equipes, nb_poules, nb_max) {
     const nb_equipes = equipes.length;
@@ -781,8 +753,7 @@ export function generer_poules(equipes, nb_poules, nb_max) {
 }*/
 
 
-/*
-function scoreGlobal(poules) {
+/*function scoreGlobal(poules) {
     const distances = poules.map(p => parseFloat(p.distance_moyenne));
 
     const moyenne = distances.reduce((a, b) => a + b, 0) / distances.length;
@@ -936,4 +907,31 @@ function equilibrerDistancesMoyennes(poules) {
     }
 }*/
 
+/*function finaliserStatistiquesPoules(poules) {
+    poules.forEach(poule => {
+        let sommeDistancesPoule = 0;
+        let nbPaires = 0;
+        const n = poule.equipes.length;
+
+        //poule.equipes.forEach(e => e.distance_totale = 0);
+
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const d = distance(poule.equipes[i], poule.equipes[j]);
+                
+                poule.equipes[i].distance_totale += d;
+                poule.equipes[j].distance_totale += d;
+
+                //sommeDistancesPoule += d;
+                //nbPaires++;
+            }
+        }
+
+        //poule.distance_moyenne = nbPaires > 0 ? (sommeDistancesPoule / nbPaires).toFixed(2) : 0;
+        
+        poule.equipes.forEach(e => {
+            e.distance_totale = e.distance_totale.toFixed(2);
+        });
+    });
+}*/
 
