@@ -1,3 +1,6 @@
+import { toast } from "./toast.js";
+
+
 let config = JSON.parse(localStorage.getItem('championnatConfig'));
 const clubs = JSON.parse(localStorage.getItem("clubs"));
 
@@ -8,28 +11,10 @@ if (!config) {
 }
 
 
- const toastContainer = document.getElementById('toast-container');
-
-    const ICONS = {
-        success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
-        error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-        warn: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-        info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    };
-
-    function toast(msg, type = 'success') {
-        const el = document.createElement('div');
-        el.className = `toast toast--${type}`;
-        el.innerHTML = (ICONS[type] || '') + '<span>' + msg + '</span>';
-        toastContainer.appendChild(el);
-        setTimeout(() => {
-            el.classList.add('leaving');
-            setTimeout(() => el.remove(), 300);
-        }, 3500);
-    }
 
 
-export function traiterCSV(contenu) {
+
+/*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
     const data = [];
     
@@ -49,7 +34,7 @@ export function traiterCSV(contenu) {
             toast(`Erreur : Le club (ID: ${idClubEquipe}) de l'équipe "${nomEquipe}" est introuvable dans le fichier des clubs.`, "error");
             console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
             
-            // On peut décider de stopper le traitement ou d'ignorer l'équipe
+            
             toast("imposssible de générer","error");
             return; 
         }
@@ -66,10 +51,51 @@ export function traiterCSV(contenu) {
     }
 
     return data;
+}*/
+export function traiterCSV(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    const equipesInconnues = [];
+    
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id] = c; });
+
+    for (let i = 0; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+        
+        const colonnes = lignes[i].split(";");
+        const idClubEquipe = colonnes[1];
+
+        if (!mapClubs[idClubEquipe]) {
+            const nomEquipe = colonnes[2] || "Inconnue";
+            equipesInconnues.push({ nom: nomEquipe, id_club: idClubEquipe });
+            continue;
+        }
+        data.push({
+            id: colonnes[0],
+            id_club: idClubEquipe,
+            nom: colonnes[2],
+            niveau: parseInt(colonnes[3]),
+            effectif: parseInt(colonnes[4]),
+            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
+            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
+        });
+    }
+
+    if (equipesInconnues.length > 0) {
+        /*equipesInconnues.forEach(e => {
+            toast(`Erreur : Le club (ID: ${e.id_club}) de l'équipe "${e.nom}" est introuvable dans le fichier des clubs.`, "error");
+            console.error(`Coordonnées manquantes pour l'équipe : ${e.nom}`);
+        });*/
+        toast("Impossible de générer", "error");
+        return { succes: false, tableau: equipesInconnues };
+    }
+
+    return { succes: true, tableau: data };
 }
 
 // Distance Haversine entre deux équipes (en km)
-function distance(e1, e2) {
+export function distance(e1, e2) {
     const R = 6371;
     const dLat = (e2.latitude - e1.latitude) * Math.PI/180;
     const dLon = (e2.longitude - e1.longitude) * Math.PI/180;
@@ -234,7 +260,7 @@ function choisirMeilleurePoule(poules, equipe) {
 }
 
 
-function ajouterEquipeDansPoule(poule, equipe) {
+export function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
     poule.barycentre = calculerBarycentre(poule.equipes);
     poule.distance_moyenne = calculerDistanceMoyenne(poule);
@@ -485,34 +511,6 @@ export function finaliserStatistiquesPoules(poules) {
     });
 }
 
-/*function finaliserStatistiquesPoules(poules) {
-    poules.forEach(poule => {
-        let sommeDistancesPoule = 0;
-        let nbPaires = 0;
-        const n = poule.equipes.length;
-
-        //poule.equipes.forEach(e => e.distance_totale = 0);
-
-        for (let i = 0; i < n; i++) {
-            for (let j = i + 1; j < n; j++) {
-                const d = distance(poule.equipes[i], poule.equipes[j]);
-                
-                poule.equipes[i].distance_totale += d;
-                poule.equipes[j].distance_totale += d;
-
-                //sommeDistancesPoule += d;
-                //nbPaires++;
-            }
-        }
-
-        //poule.distance_moyenne = nbPaires > 0 ? (sommeDistancesPoule / nbPaires).toFixed(2) : 0;
-        
-        poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(2);
-        });
-    });
-}*/
-
 
 export function generer_poules(equipes, nb_poules, nb_max) {
     const nb_equipes = equipes.length;
@@ -740,8 +738,7 @@ export function generer_poules(equipes, nb_poules, nb_max) {
 }*/
 
 
-/*
-function scoreGlobal(poules) {
+/*function scoreGlobal(poules) {
     const distances = poules.map(p => parseFloat(p.distance_moyenne));
 
     const moyenne = distances.reduce((a, b) => a + b, 0) / distances.length;
@@ -895,4 +892,31 @@ function equilibrerDistancesMoyennes(poules) {
     }
 }*/
 
+/*function finaliserStatistiquesPoules(poules) {
+    poules.forEach(poule => {
+        let sommeDistancesPoule = 0;
+        let nbPaires = 0;
+        const n = poule.equipes.length;
+
+        //poule.equipes.forEach(e => e.distance_totale = 0);
+
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const d = distance(poule.equipes[i], poule.equipes[j]);
+                
+                poule.equipes[i].distance_totale += d;
+                poule.equipes[j].distance_totale += d;
+
+                //sommeDistancesPoule += d;
+                //nbPaires++;
+            }
+        }
+
+        //poule.distance_moyenne = nbPaires > 0 ? (sommeDistancesPoule / nbPaires).toFixed(2) : 0;
+        
+        poule.equipes.forEach(e => {
+            e.distance_totale = e.distance_totale.toFixed(2);
+        });
+    });
+}*/
 

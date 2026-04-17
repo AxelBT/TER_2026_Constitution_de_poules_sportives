@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration du Championnat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <header class="card-header">
+                <h1>Initialisation du Championnat</h1>
+                <p>Importez vos clubs et définissez les paramètres de base.</p>
+            </header>
+
+            <form id="form-config">
+
+                <div class="form-group">
+                    <label for="cat-select">Choisissez une catégorie&nbsp;:</label>
+
+                    <select name="category" id="cat-select">
+                        <option value="">Veuillez choisir une option</option>
+                        <option value="senior">Senior</option>
+                        <option value="junior">Junior</option>
+                        
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nb_niveaux">Nombre de niveaux</label>
+                        <input type="number" id="nb_niveaux" name="nb_niveaux" min="1" max="5" value="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Type de Championnat</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="genre" value="masculin" checked>
+                                <span>Masculin</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="genre" value="feminin">
+                                <span>Féminin</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+  <label>Critère de génération des poules</label>
+  <div class="toggle-container">
+    <input
+      type="radio"
+      name="generation-choice"
+      id="gen-level"
+      class="toggle-input"
+      checked
+    />
+    <label for="gen-level" class="toggle-label">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
+      Niveau
+    </label>
+
+    <input
+      type="radio"
+      name="generation-choice"
+      id="gen-distance"
+      class="toggle-input"
+    />
+    <label for="gen-distance" class="toggle-label">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" /><circle cx="12" cy="10" r="3" /></svg>
+      Distance
+    </label>
+  </div>
+</div>
+
+                <div class="form-group">
+                    <label>Liste des clubs (Format CSV)</label>
+                    <div class="drop-zone" id="drop-zone">
+                        <input type="file" id="file_csv" name="file_csv" accept=".csv" class="file-input">
+                        <div class="drop-zone-content">
+                            <!--span class="icon">📁</span-->
+                            <p id="file-label">Glissez votre fichier ici ou <strong>parcourez</strong></p>
+                            <p class="file-limit">Format .csv uniquement</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Passer à la configuration des niveaux →</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+</body>
+
+</html>

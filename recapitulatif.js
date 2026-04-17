@@ -1,3 +1,6 @@
+import {
+  distance,
+} from "./calcul-poules.js";
 document.addEventListener('DOMContentLoaded', () => {
 
     const params = new URLSearchParams(window.location.search);
@@ -13,24 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     
-    const toastContainer = document.getElementById('toast-container');
-    const ICONS = {
-        success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
-        error:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-        warn:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-        info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    };
-
-    function toast(msg, type = 'success') {
-        const el = document.createElement('div');
-        el.className = `toast toast--${type}`;
-        el.innerHTML = (ICONS[type] || '') + '<span>' + msg + '</span>';
-        toastContainer.appendChild(el);
-        setTimeout(() => {
-            el.classList.add('leaving');
-            setTimeout(() => el.remove(), 300);
-        }, 3500);
-    }
 
     
     function renderStepper() {
@@ -155,17 +140,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     
-    function afficherNiveau(niveauData) {
+    /*function afficherNiveau(niveauData) {
         const { niveau, poules } = niveauData;
         const nbEquipes = poules.reduce((s, p) => s + p.equipes.length, 0);
         const distMoy   = poules.reduce((s, p) => s + parseFloat(p.distance_moyenne || 0), 0) / (poules.length || 1);
         const distMin   = Math.min(...poules.map(p => parseFloat(p.distance_moyenne || 0)));
         const distMax   = Math.max(...poules.map(p => parseFloat(p.distance_moyenne || 0)));
-
+        const nb_max_equipes = Math.max(...poules.map((p) => p.nb_max));
         const cartes = poules.map((poule, pi) => {
             const couleur = PALETTE[pi % PALETTE.length];
             const lettre  = poule.nom || String.fromCharCode(65 + pi);
-            const lignes  = poule.equipes.map(e => `
+            const lignes = poule.equipes.map(e => `
                 <div class="pool-team-row">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
                     <span>${e.nom}</span>
@@ -173,6 +158,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `).join('');
 
+            // Ajout de l'exempt si la poule est incomplète
+            let exempt = ``;
+            if (poule.equipes.length < nb_max_equipes) {
+                exempt = `
+                    <div class="pool-team-row"
+                        style="background-color: rgba(0,0,0,0.05); color: #888; font-style: italic;">
+                        <span class="pool-team-dot" style="background:#ccc; opacity:0.5;"></span>
+                        <span>Exempt</span>
+                        <span class="pool-team-club">-</span>
+                    </div>`;
+            }
             return `
             <div class="pool-card">
                 <div class="pool-card-head">
@@ -182,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
                     </span>
                 </div>
-                ${lignes}
+                ${lignes}${exempt}
             </div>`;
         }).join('');
 
@@ -210,8 +206,75 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="pools-grid">${cartes}</div>
         </div>`;
-    }
+    }*/
 
+    function afficherNiveau(niveauData) {
+        const { niveau, poules } = niveauData;
+        const toutesLesEquipes = poules.flatMap(p => p.equipes);
+        const totalDistancesIndividuelles = toutesLesEquipes.reduce((s, e) => s + parseFloat(e.distance_totale || 0), 0);
+        const moyenneEquipeGlobale = totalDistancesIndividuelles / (toutesLesEquipes.length || 1);
+        const nb_max_equipes = Math.max(...poules.map((p) => p.nb_max));
+        const cartes = poules.map((poule, pi) => {
+            const couleur = PALETTE[pi % PALETTE.length];
+            const lettre  = poule.nom || String.fromCharCode(65 + pi);
+            const n = poule.equipes.length;
+            const distancesAuCentre = poule.equipes.map(e => distance(e, poule.barycentre));
+            const moyDistCentre = distancesAuCentre.reduce((s, d) => s + d, 0) / (n || 1);
+            const variance = distancesAuCentre.reduce((s, d) => s + Math.pow(d - moyDistCentre, 2), 0) / (n || 1);
+            const ecartType = Math.sqrt(variance);
+            const lignes = poule.equipes.map(e => `
+                <div class="pool-team-row">
+                    <span class="pool-team-dot" style="background:${couleur}"></span>
+                    <span>${e.nom}</span>
+                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} km</span>
+                </div>
+            `).join('');
+
+            // Ajout de l'exempt si la poule est incomplète
+            let exempt = ``;
+            if (poule.equipes.length < nb_max_equipes) {
+                exempt = `
+                    <div class="pool-team-row"
+                        style="background-color: rgba(0,0,0,0.05); color: #888; font-style: italic;">
+                        <span class="pool-team-dot" style="background:#ccc; opacity:0.5;"></span>
+                        <span>Exempt</span>
+                        <span class="pool-team-club">-</span>
+                    </div>`;
+            }
+            return `
+            <div class="pool-card">
+                <div class="pool-card-head">
+                    <span class="pool-dot" style="background:${couleur}"></span>
+                    Poule ${lettre}
+                    <div style="text-align:right; margin-left:auto">
+                        <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+                            Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; font-weight:normal">
+                            σ: ${ecartType.toFixed(1)} (Écart-type)
+                        </div>
+                    </div>
+                </div>
+                ${lignes}${exempt}
+            </div>`;
+        }).join('');
+
+        document.getElementById('recap-content').innerHTML = `
+            <div class="niveau-bloc">
+                <div class="niveau-bloc-header">
+                    <span class="niveau-bloc-title">
+                        ${config.categorie.toUpperCase()} — ${config.genre} — Niveau ${niveau}
+                    </span>
+                    <span class="niveau-bloc-meta">${poules.length} poules · ${toutesLesEquipes.length} équipes</span>
+                </div>
+                <div class="niveau-stats">
+                    <div class="niveau-stat-pill" style="background: var(--clr-primary-100); color: var(--clr-primary-700)">
+                        Moyenne trajet équipe: <strong>${moyenneEquipeGlobale.toFixed(0)} km</strong>
+                    </div>
+                </div>
+                <div class="pools-grid">${cartes}</div>
+            </div>`;
+    }
     
     function exporterExcel(niveauxData) {
         if (typeof XLSX === 'undefined') {
