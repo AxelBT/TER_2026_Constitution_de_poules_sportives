@@ -191,7 +191,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const equipes = resultat.tableau;
         localStorage.setItem(`csv_niveau${config.niveauActuel}`, contenu);
         localStorage.setItem(`csv_nom_niveau${config.niveauActuel}`, file.name);
-        const equipes = traiterCSV(contenu);
         //localStorage.setItem("equipes", JSON.stringify(equipes));
         const nb_poules = parseInt(document.getElementById("nb_poules").value);
         const nb_max = parseInt(
@@ -488,83 +487,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ── GRILLE DE POULES ───────────────────────────────────────────────────── */
-  function afficherPoules(poules) {
-    const grid = document.getElementById("pools-grid");
-    const meta = document.getElementById("pools-meta");
-    const btnEchange = document.getElementById("conteneur-btn-echange");
-
-    highlightPoule._actif = null;
-
-    if (!poules.length) {
-      meta.textContent = "";
-      grid.innerHTML = `
-        <div class="pools-empty">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-          </svg>
-          <p>Les poules apparaîtront ici après génération.</p>
-        </div>`;
-      return;
-    }
-
-    const totalEq = poules.reduce((s, p) => s + p.equipes.length, 0);
-    meta.textContent = `${totalEq} équipes · ${poules.length} poules`;
-
-    if (btnEchange && !document.getElementById("btn-switch")) {
-      btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
-      document.getElementById("btn-switch").addEventListener("click", () => {
-        setModeEdition(!modeEdition, poules);
-      });
-    }
-
-    const nb_max_equipes = Math.max(...poules.map((p) => p.nb_max));
-    grid.innerHTML = poules
-      .map((poule, pi) => {
-        const lettre = poule.nom || String.fromCharCode(65 + pi);
-        const couleur = PALETTE[pi % PALETTE.length];
-
-        let lignes = poule.equipes
-          .map(
-            (e) => `
-            <div class="pool-team-row${modeEdition ? " clickable" : ""}"
-                 data-poule-index="${pi}"
-                 data-equipe-id="${e.id}">
-              <span class="pool-team-dot" style="background:${couleur}"></span>
-              <span>${e.nom}</span>
-              <span class="pool-team-club">${e.distance_totale} Km</span>
-            </div>`,
-          )
-          .join("");
-
-        return `
-            <div class="pool-card" data-poule-index="${pi}">
-                <div class="pool-card-head">
-                    <span class="pool-dot" style="background:${couleur}"></span>
-                    Poule ${lettre}
-                    <span style="font-weight:500;color:var(--clr-surface-400);margin-left:2px">
-                        (${poule.distance_moyenne.toFixed(0)} km)
-                    </span>
-                </div>
-                ${lignes}
-            </div>`;
-      })
-      .join("");
-
-    // Listeners clic sur les cards pour highlight carte (hors mode édition)
-    document.querySelectorAll(".pool-card").forEach((card, i) => {
-      card.addEventListener("click", () => {
-        if (modeEdition) return;
-        highlightPoule(i, poules);
-      });
-    });
-
-    // Listeners mode édition si actif
-    if (modeEdition) attacherListeners(poules);
-  }*/
-
+ 
   function afficherPoules(poules) {
     const grid = document.getElementById("pools-grid");
     const meta = document.getElementById("pools-meta");
