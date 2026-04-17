@@ -15,41 +15,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
     if (form) {
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            console.log('Submit déclenché');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        console.log('Submit déclenché');
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const contenu = e.target.result;
-                const clubs = traiter_csv_clubs(contenu);
+        const file = fileInput.files[0];
+       
+        if (!file) {
+            alert("Veuillez importer un fichier CSV des clubs.");
+            return; 
+        }
 
-                const config = {
-                    categorie: document.getElementById('cat-select').value,
-                    niveaux: parseInt(document.getElementById('nb_niveaux').value),
-                    genre: document.querySelector('input[name="genre"]:checked').value,
-                    niveauActuel: 1
-                };
+        const selectedModeId = document.querySelector('input[name="generation-choice"]:checked').id;
+        const modeGeneration = selectedModeId === 'gen-distance' ? 'distance' : 'niveau';
 
-                console.log('Config:', config);
-                console.log('Clubs', clubs);
+        const reader = new FileReader();
+        
+        reader.onload = function (event) {
+            const contenu = event.target.result;
+            const clubs = traiter_csv_clubs(contenu);
 
-                const params = new URLSearchParams({
-                    categorie: config.categorie,
-                    niveaux: config.niveaux,
-                    genre: config.genre,
-                    niveauActuel: config.niveauActuel
-                });
-                localStorage.setItem("clubs", JSON.stringify(clubs));
-
-                localStorage.setItem('championnatConfig', JSON.stringify(config));
-
-                window.location.href = 'niveau.html?' + params.toString();
+            const config = {
+                categorie: document.getElementById('cat-select').value,
+                niveaux: parseInt(document.getElementById('nb_niveaux').value),
+                genre: document.querySelector('input[name="genre"]:checked').value,
+                niveauActuel: 1,
+                mode: modeGeneration 
             };
-            reader.readAsText(file);
-        });
-    }
+
+            console.log('Config:', config);
+            console.log('Clubs', clubs);
+
+
+            const params = new URLSearchParams({
+                categorie: config.categorie,
+                niveaux: config.niveaux,
+                genre: config.genre,
+                niveauActuel: config.niveauActuel,
+                mode: config.mode 
+            });
+
+            localStorage.setItem("clubs", JSON.stringify(clubs));
+            localStorage.setItem('championnatConfig', JSON.stringify(config));
+
+            window.location.href = 'niveau.html?' + params.toString();
+        };
+        
+        reader.readAsText(file);
+    });
+}
 });
 
 
