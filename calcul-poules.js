@@ -14,7 +14,7 @@ if (!config) {
 
 
 
-export function traiterCSV(contenu) {
+/*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
     const data = [];
     
@@ -34,7 +34,7 @@ export function traiterCSV(contenu) {
             toast(`Erreur : Le club (ID: ${idClubEquipe}) de l'équipe "${nomEquipe}" est introuvable dans le fichier des clubs.`, "error");
             console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
             
-            // On peut décider de stopper le traitement ou d'ignorer l'équipe
+            
             toast("imposssible de générer","error");
             return; 
         }
@@ -51,10 +51,51 @@ export function traiterCSV(contenu) {
     }
 
     return data;
+}*/
+export function traiterCSV(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    const equipesInconnues = [];
+    
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id] = c; });
+
+    for (let i = 0; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+        
+        const colonnes = lignes[i].split(";");
+        const idClubEquipe = colonnes[1];
+
+        if (!mapClubs[idClubEquipe]) {
+            const nomEquipe = colonnes[2] || "Inconnue";
+            equipesInconnues.push({ nom: nomEquipe, id_club: idClubEquipe });
+            continue;
+        }
+        data.push({
+            id: colonnes[0],
+            id_club: idClubEquipe,
+            nom: colonnes[2],
+            niveau: parseInt(colonnes[3]),
+            effectif: parseInt(colonnes[4]),
+            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
+            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
+        });
+    }
+
+    if (equipesInconnues.length > 0) {
+        /*equipesInconnues.forEach(e => {
+            toast(`Erreur : Le club (ID: ${e.id_club}) de l'équipe "${e.nom}" est introuvable dans le fichier des clubs.`, "error");
+            console.error(`Coordonnées manquantes pour l'équipe : ${e.nom}`);
+        });*/
+        toast("Impossible de générer", "error");
+        return { succes: false, tableau: equipesInconnues };
+    }
+
+    return { succes: true, tableau: data };
 }
 
 // Distance Haversine entre deux équipes (en km)
-function distance(e1, e2) {
+export function distance(e1, e2) {
     const R = 6371;
     const dLat = (e2.latitude - e1.latitude) * Math.PI/180;
     const dLon = (e2.longitude - e1.longitude) * Math.PI/180;
@@ -219,7 +260,7 @@ function choisirMeilleurePoule(poules, equipe) {
 }
 
 
-function ajouterEquipeDansPoule(poule, equipe) {
+export function ajouterEquipeDansPoule(poule, equipe) {
     poule.equipes.push(equipe);
     poule.barycentre = calculerBarycentre(poule.equipes);
     poule.distance_moyenne = calculerDistanceMoyenne(poule);
