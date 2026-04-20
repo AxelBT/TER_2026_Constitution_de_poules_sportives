@@ -111,7 +111,7 @@ async function traiter_csv_clubs(contenu) {
             
             if (coords) {
                 data.push({
-                    id: id,
+                    id_club: id,
                     nom: nom,
                     latitude: coords.lat,
                     longitude: coords.lng,
