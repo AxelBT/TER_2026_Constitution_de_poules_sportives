@@ -261,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const m = L.marker([lat, lng], { icon: createPinIcon("#888780") });
         m.bindPopup(
-          `<strong>${c.nom_club} ${c.numero}</strong><br><span style="color:#888">Club ${c.num_club}</span>`,
+          `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC "+c.ctc_num : "Club "+c.num_club}</span>`,
         );
         m.addTo(map);
         m.clubId = c.num_club;

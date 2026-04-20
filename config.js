@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem("clubs", JSON.stringify(clubs));
             localStorage.setItem('championnatConfig', JSON.stringify(config));
-            localStorage.setItem('clubsIgnorés', JSON.stringify(clubs_ignores));
+            localStorage.setItem('clubs_ignorés', JSON.stringify(clubs_ignores));
 
             window.location.href = 'niveau.html?' + params.toString();
         };
@@ -93,7 +93,7 @@ async function traiter_csv_clubs(contenu) {
         const complement = colonnes[3] || "";
         const commune = colonnes[4] || "";
         const codePostal = colonnes[5] || "";
-        const type = colonnes[7] || "club";
+        const type = colonnes[6] || "club";
         
         if (!commune) {
             ignores.push(nom || `ligne ${i + 1}`);
