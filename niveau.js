@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const m = L.marker([lat, lng], { icon: createPinIcon("#888780") });
         m.bindPopup(
-          `<strong>${c.nom_club}</strong><br><span style="color:#888">Club ${c.numero}</span>`,
+          `<strong>${c.nom_club} ${c.numero} </strong><br><span style="color:#888">Club ${c.num_club}</span>`,
         );
         m.addTo(map);
         m.clubId = c.num_club;
@@ -290,14 +290,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const poule = poulesActuelles[pouleIndex];
     const couleur = PALETTE[pouleIndex % PALETTE.length];
     const idsPoule = new Set(poule.equipes.map((e) => e.id)); // ← id au lieu de id_club
-    console.log(idsPoule);
     markers.forEach((m) => {
       if (idsPoule.has(m.equipeId)) {
         m.setIcon(createPinIcon(couleur, 1));
         m.setZIndexOffset(1000);
         const equipe = poule.equipes.find((e) => e.id === m.equipeId); // ← idem
         m.bindPopup(
-          `<strong>${equipe ? equipe.nom : "Inconnu"}</strong><br><span style="color:#888">Club ${m.clubId}</span>`,
+          `<strong>${equipe ? equipe.nom_club +" "+equipe.numero : "Inconnu"}</strong><br><span style="color:#888">Club ${m.clubId}</span>`,
         );
       } else {
         m.setIcon(createPinIcon("#888780", 0.25));
