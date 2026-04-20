@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     niveaux: parseInt(params.get("niveaux")) || 1,
     genre: params.get("genre") || "masculin",
     niveauActuel: parseInt(params.get("niveauActuel")) || 1,
+    mode: params.get("mode") || "distance",
   };
 
   const PALETTE = [
@@ -241,8 +242,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const bounds = [];
     Object.values(groupes).forEach((groupe) => {
       groupe.forEach((c, index) => {
-        const baseLat = parseFloat(String(c.longitude).replace(",", "."));
-        const baseLng = parseFloat(String(c.latitude).replace(",", "."));
+        const baseLat = parseFloat(String(c.latitude).replace(",", "."));
+        const baseLng = parseFloat(String(c.longitude).replace(",", "."));
         if (isNaN(baseLat) || isNaN(baseLng)) return;
 
         const [lat, lng] = jitterCoords(baseLat, baseLng, index, groupe.length);
@@ -607,12 +608,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+
   document
-    .getElementById("btn-generer-niveau")
-    .addEventListener("click", () => onGenerer("niveau"));
-  document
-    .getElementById("btn-generer-dis")
-    .addEventListener("click", () => onGenerer("distance"));
+    .getElementById("btn-generer")
+    .addEventListener("click", () => onGenerer((config.mode)));
 
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();

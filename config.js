@@ -1,3 +1,5 @@
+import {toast} from "./toast.js";
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('form-config');
@@ -17,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
-        console.log('Submit déclenché');
 
         const file = fileInput.files[0];
        
@@ -31,9 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const reader = new FileReader();
         
-        reader.onload = function (event) {
+        reader.onload = async function (event) {
             const contenu = event.target.result;
-            const clubs = traiter_csv_clubs(contenu);
+            console.log('Submit déclenché');
+            const [clubs, clubs_ignores] = await traiter_csv_clubs(contenu);
 
             const config = {
                 categorie: document.getElementById('cat-select').value,
@@ -57,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem("clubs", JSON.stringify(clubs));
             localStorage.setItem('championnatConfig', JSON.stringify(config));
+            localStorage.setItem('clubsIgnorés', JSON.stringify(clubs_ignores));
 
             window.location.href = 'niveau.html?' + params.toString();
         };
@@ -68,40 +71,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-function traiter_csv_clubs(contenu) {
-    const lignes = contenu.split("\n");
+async function traiter_csv_clubs(contenu) {
     const data = [];
     const ignores = [];
+    
+    const lignes = contenu.trim().split("\n");
+    console.log("Début du traitement");
+    const parserLigneCsv = (ligne) => {
+        const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+        return ligne.split(regex).map(cell => cell.replace(/^"|"$/g, '').trim());
+    };
 
-    for (let i = 0; i < lignes.length; i++) {
+    for (let i = 1; i < lignes.length; i++) {
         if (lignes[i].trim() === "") continue;
 
-        const colonnes = lignes[i].split(";");
-
-        const lat = parseFloat(colonnes[2]);
-        const lng = parseFloat(colonnes[3]);
-
-        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
-            ignores.push(colonnes[1]?.trim() || `ligne ${i + 1}`);
+        const colonnes = parserLigneCsv(lignes[i]);
+        
+        const id = colonnes[0] || "";
+        const nom = colonnes[1] || "";
+        const adresse = colonnes[2] || "";
+        const complement = colonnes[3] || "";
+        const commune = colonnes[4] || "";
+        const codePostal = colonnes[5] || "";
+        const type = colonnes[7] || "club";
+        
+        if (!commune) {
+            ignores.push(nom || `ligne ${i + 1}`);
             continue;
         }
-
-        data.push({
-            id: colonnes[0]?.trim(),
-            nom: colonnes[1]?.trim(),
-            latitude: lat,
-            longitude: lng,
-        });
+        
+        const rueEtComplement = [adresse, complement]
+            .filter(part => part.length > 0)
+            .join(" ");
+            
+        const rechercheApi = rueEtComplement || commune;
+        
+        try {
+            const coords = await geocoderAdresse(rechercheApi, codePostal);
+            
+            if (coords) {
+                data.push({
+                    id: id,
+                    nom: nom,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    adresse: `${rueEtComplement} ${codePostal} ${commune}`.trim(),
+                    type : `${type}`.trim()
+                    
+                });
+                console.log(`✓ ${nom} géocodé`);
+            } else {
+                ignores.push(nom || `ligne ${i + 1}`);
+                console.warn(`✗ ${nom} non géocodé`);
+            }
+        } catch (error) {
+            console.error(`Erreur géocodage pour ${nom}:`, error);
+            ignores.push(nom || `ligne ${i + 1}`);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
     }
+
+    console.log(`Résultat: ${data.length} clubs géocodés, ${ignores.length} ignorés`);
 
     if (ignores.length > 0) {
-        console.warn(`${ignores.length} club(s) ignoré(s) (coordonnées manquantes ou nulles) :`, ignores);
-        toast(`${ignores.length} club(s) ignoré(s) faute de coordonnées : ${ignores.join(', ')}.`, 'warn');
+        console.warn(`${ignores.length} club(s) ignoré(s) (géocodage échoué) :`, ignores);
+        const preview = ignores.slice(0, 3).join(', ');
+        if (typeof toast !== 'undefined') {
+            toast(`${ignores.length} club(s) ignoré(s) : ${preview}${ignores.length > 3 ? '...' : ''}.`, 'warn');
+        }
     }
 
-    return data;
+    return [data, ignores];
 }
 
+async function geocoderAdresse(adresse, codePostal = "") {
+    try {
+        let url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(adresse)}&limit=1`;
+        
+        if (codePostal) {
+            url += `&postcode=${encodeURIComponent(codePostal)}`;
+        }
+
+        console.log("Tentative de fetch sur l'URL :", url);
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.features && data.features.length > 0) {
+            const coords = data.features[0].geometry.coordinates;
+            const score = data.features[0].properties.score;
+            
+            if (score > 0.3) {
+                return { lat: coords[1], lng: coords[0] };
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error("Erreur lors du géocodage:", error);
+        return null;
+    }
+}
 
 /* async function traiter_csv_clubs(contenu) {
     const lignes = contenu.split("\n");
