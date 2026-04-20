@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     niveaux: parseInt(params.get("niveaux")) || 1,
     genre: params.get("genre") || "masculin",
     niveauActuel: parseInt(params.get("niveauActuel")) || 1,
+    mode: params.get("mode") || "distance",
   };
 
   const PALETTE = [
@@ -260,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const m = L.marker([lat, lng], { icon: createPinIcon("#888780") });
         m.bindPopup(
-          `<strong>${c.nom_club} ${c.numero} </strong><br><span style="color:#888">Club ${c.num_club}</span>`,
+          `<strong>${c.nom_club} ${c.numero}</strong><br><span style="color:#888">Club ${c.num_club}</span>`,
         );
         m.addTo(map);
         m.clubId = c.num_club;
@@ -296,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.setZIndexOffset(1000);
         const equipe = poule.equipes.find((e) => e.id === m.equipeId); // ← idem
         m.bindPopup(
-          `<strong>${equipe ? equipe.nom_club +" "+equipe.numero : "Inconnu"}</strong><br><span style="color:#888">Club ${m.clubId}</span>`,
+          `<strong>${equipe ? equipe.nom_club + " " + equipe.numero : "Inconnu"}</strong><br><span style="color:#888">Club ${m.clubId}</span>`,
         );
       } else {
         m.setIcon(createPinIcon("#888780", 0.25));
@@ -629,12 +630,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+
   document
-    .getElementById("btn-generer-niveau")
-    .addEventListener("click", () => onGenerer("niveau"));
-  document
-    .getElementById("btn-generer-dis")
-    .addEventListener("click", () => onGenerer("distance"));
+    .getElementById("btn-generer")
+    .addEventListener("click", () => onGenerer((config.mode)));
 
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();

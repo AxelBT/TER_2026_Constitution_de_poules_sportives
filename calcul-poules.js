@@ -2,8 +2,8 @@ import { toast } from "./toast.js";
 
 
 let config = JSON.parse(localStorage.getItem('championnatConfig'));
-//const clubs = JSON.parse(localStorage.getItem("clubs"));
-import { clubs } from './clubs.js'
+const clubs = JSON.parse(localStorage.getItem("clubs"));
+//import { clubs } from './clubs.js'
 console.log(clubs);
 
 if (!config) {
