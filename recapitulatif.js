@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const lignes = poule.equipes.map(e => `
                 <div class="pool-team-row">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
-                    <span>${e.nom}</span>
+                    <span>${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}</span>
                     <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} km</span>
                 </div>
             `).join('');
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="niveau-bloc">
                 <div class="niveau-bloc-header">
                     <span class="niveau-bloc-title">
-                        ${config.categorie.toUpperCase()} — ${config.genre} — Niveau ${niveau}
+                        ${config.categorie.toUpperCase()} — ${config.genre.toUpperCase()} — ${niveau}
                     </span>
                     <span class="niveau-bloc-meta">${poules.length} poules · ${toutesLesEquipes.length} équipes</span>
                 </div>
