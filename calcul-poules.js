@@ -3,7 +3,8 @@ import { toast } from "./toast.js";
 
 let config = JSON.parse(localStorage.getItem('championnatConfig'));
 const clubs = JSON.parse(localStorage.getItem("clubs"));
-
+//import { clubs } from './clubs.js'
+console.log(clubs);
 
 if (!config) {
     window.location.href = 'poule.html'; 
@@ -52,7 +53,7 @@ if (!config) {
 
     return data;
 }*/
-export function traiterCSV(contenu) {
+/*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
     const data = [];
     const equipesInconnues = [];
@@ -83,16 +84,116 @@ export function traiterCSV(contenu) {
     }
 
     if (equipesInconnues.length > 0) {
-        /*equipesInconnues.forEach(e => {
-            toast(`Erreur : Le club (ID: ${e.id_club}) de l'équipe "${e.nom}" est introuvable dans le fichier des clubs.`, "error");
-            console.error(`Coordonnées manquantes pour l'équipe : ${e.nom}`);
-        });*/
+        toast("Impossible de générer", "error");
+        return { succes: false, tableau: equipesInconnues };
+    }
+
+    return { succes: true, tableau: data };
+}*/
+function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
+    let num = parseInt(numEquipe);
+    
+    while (data.some(e => 
+        e.id_club === numClub && 
+        e.numero === num && 
+        e.type === (estCTC ? "CTC" : "Club")  // on compare uniquement entre mêmes types
+    )) {
+        num++;
+    }
+    
+    return num;
+}
+
+function verifierCoherenceClub(data, numClub, nomClub) {
+    const existant = data.find(e => e.id_club === numClub);
+    if (!existant) return true; 
+    return existant.nom_club === nomClub;
+}
+
+export function traiterCSV(contenu) {
+    console.log(contenu);
+    const lignes = contenu.split("\n");
+    const data = [];
+    const equipesInconnues = [];
+
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id_club] = c; });
+
+    const headers = lignes[0].split(",").map(h => h.trim());
+
+    const idx = {
+        club_nom:   headers.indexOf("CLUB_NOM"),
+        club_num:   headers.indexOf("CLUB_NUMERO"),
+        type:       headers.indexOf("TYPE_EQUIPE"),
+        ctc_nom:    headers.indexOf("CTC_NOM"),
+        ctc_num:    headers.indexOf("CTC_NUMERO"),
+        equipe_num: headers.indexOf("EQUIPE_NUMERO"),
+        niveau:     headers.indexOf("NIVEAU"),
+    };
+
+    for (let i = 1; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+
+        const colonnes  = lignes[i].split(",");
+        const type      = colonnes[idx.type]?.trim();
+        const estCTC    = type === "Coopération Territoriale Club";
+        const numClub   = colonnes[idx.club_num]?.trim();
+        const nomClub   = colonnes[idx.club_nom]?.trim();
+        const niveau    = colonnes[idx.niveau]?.trim();
+        const ctcNom    = colonnes[idx.ctc_nom]?.trim();
+        const ctcNum    = colonnes[idx.ctc_num]?.trim();
+        const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
+
+        const club = mapClubs[numClub];
+        if (!club) {
+            const nomAffiche = estCTC ? (ctcNom || "Inconnue") : (nomClub || "Inconnue");
+            equipesInconnues.push({ nom: nomAffiche, id_club: numClub });
+            continue;
+        }
+
+        if (!verifierCoherenceClub(data, numClub, nomClub)) {
+            toast(
+                `Incohérence : le numéro ${numClub} correspond à deux noms de clubs différents.`,
+                "error"
+            );
+            return { succes: false, tableau: [] };
+        }
+
+        const numEquipe = trouverNumeroEquipeDisponible(data, numClub, numEquipeRaw,estCTC);
+
+        if (numEquipe !== numEquipeRaw) {
+            console.warn(
+                `Doublon détecté : club ${numClub}, équipe ${numEquipeRaw} → renommée en ${numEquipe}`
+            );
+        }
+
+        const equipe = {
+            id: nomClub.concat("-", numEquipe),
+            num_club:   numClub,
+            nom_club:  nomClub,
+            numero:    numEquipe,
+            type:      estCTC ? "CTC"   : "Club",
+            niveau:    niveau,
+            latitude:  parseFloat(club.latitude),
+            longitude: parseFloat(club.longitude),
+        };
+
+        if (estCTC) {
+            equipe.ctc_nom = ctcNom;
+            equipe.ctc_num = ctcNum;
+        }
+
+        data.push(equipe);
+    }
+
+    if (equipesInconnues.length > 0) {
         toast("Impossible de générer", "error");
         return { succes: false, tableau: equipesInconnues };
     }
 
     return { succes: true, tableau: data };
 }
+
 
 // Distance Haversine entre deux équipes (en km)
 export function distance(e1, e2) {
@@ -231,7 +332,7 @@ function choisirGrainesOptimisees(equipes, nb_poules, poules,barycentreGlobal) {
 }
 
 export function verifierClubDansPoule(poule, equipe) {
-    return poule.equipes.some(e => e.id_club === equipe.id_club);
+    return poule.equipes.some(e => e.num_club === equipe.num_club);
 }
 
 function choisirMeilleurePoule(poules, equipe) {
@@ -320,7 +421,7 @@ function verifierSaturationClub(equipes, nb_poules) {
     const count = {};
 
     equipes.forEach(e => {
-        count[e.id_club] = (count[e.id_club] || 0) + 1;
+        count[e.num_club] = (count[e.num_club] || 0) + 1;
     });
 
     const max = Math.max(...Object.values(count));
@@ -428,8 +529,8 @@ function equilibrerDistancesMoyennes(poules) {
                 const pMaxSansEMax = pMax.equipes.filter((_, idx) => idx !== i);
                 const pMinSansEMin = pMin.equipes.filter((_, idx) => idx !== j);
 
-                if (pMaxSansEMax.some(e => e.id_club === eMin.id_club)) continue;
-                if (pMinSansEMin.some(e => e.id_club === eMax.id_club)) continue;
+                if (pMaxSansEMax.some(e => e.num_club === eMin.num_club)) continue;
+                if (pMinSansEMin.some(e => e.num_club === eMax.num_club)) continue;
 
                 // Simule l'échange
                 const nouvelleDistMax = calculerDistanceMoyenne({ equipes: [...pMaxSansEMax, eMin] });
