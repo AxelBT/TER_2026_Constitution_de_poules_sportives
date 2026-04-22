@@ -590,6 +590,26 @@ body {
     transition: background var(--dur) ease;
 }
 
+.pool-team-name {
+    overflow: hidden;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.pool-team-name span {
+    display: inline-block;
+}
+
+.pool-team-row:hover .pool-team-name span {
+    animation: scroll-text 4s linear infinite;
+}
+
+@keyframes scroll-text {
+    0%, 20%  { transform: translateX(0); }
+    80%, 100% { transform: translateX(-100%); }
+}
+
 .pool-team-row:last-child { border-bottom: none; }
 .pool-team-row:hover { background: var(--clr-surface-50); }
 
