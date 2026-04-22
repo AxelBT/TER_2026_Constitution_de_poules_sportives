@@ -602,7 +602,7 @@ body {
 }
 
 .pool-team-row:hover .pool-team-name span {
-    animation: scroll-text 8s linear infinite;
+    animation: scroll-text 10s linear infinite;
 }
 
 @keyframes scroll-text {

@@ -183,25 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  function highlightToutesLesPoules(poules) {
-    const equipeIdToCouleur = new Map();
-    poules.forEach((poule, i) => {
-      const couleur = PALETTE[i % PALETTE.length];
-      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
-    });
-    markers.forEach((m) => {
-      const couleur = equipeIdToCouleur.get(m.equipeId);
-      if (couleur) {
-        m.setIcon(createPinIcon(couleur, 1));
-        m.setZIndexOffset(1000);
-      } else {
-        m.setIcon(createPinIcon("#888780", 0.25));
-        m.setZIndexOffset(0);
-      }
-    });
-    highlightPoule._actif = null;
-  }
-
   for (const btn of btnsGenerer) {
     btn.addEventListener("click", () => {
       const fileInput = document.getElementById("file_csv_niveau");
@@ -237,8 +218,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
         if (poulesActuelles) {
-          afficherPoules(poulesActuelles);
-          highlightToutesLesPoules(poulesActuelles);
+          afficherPoules();
+          highlightToutesLesPoules();
           toast(
             `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
             "success",
@@ -309,7 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
-      resetMarkers();
+      //resetMarkers();
+      highlightToutesLesPoules();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
@@ -346,7 +328,31 @@ document.addEventListener("DOMContentLoaded", () => {
       );
   }
 
+  function highlightToutesLesPoules() {
+    const equipeIdToCouleur = new Map();
+    poulesActuelles.forEach((poule, i) => {
+      const couleur = PALETTE[i % PALETTE.length];
+      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
+    });
+    markers.forEach((m) => {
+      const couleur = equipeIdToCouleur.get(m.equipeId);
+      if (couleur) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.25));
+        m.setZIndexOffset(0);
+      }
+    });
+    highlightPoule._actif = null;
+  }
 
+  function resetMarkers() {
+    markers.forEach((m) => {
+      m.setIcon(createPinIcon("#888780", 1));
+      m.setZIndexOffset(0);
+    });
+  }
 
   /* ── MODE ÉDITION ───────────────────────────────────────────────────────── */
   let modeEdition = false;
@@ -372,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (actif) {
       highlightPoule._actif = null;
-      resetMarkers();
+      //resetMarkers();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
@@ -525,6 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selection = null;
           afficherPoules();
+          highlightToutesLesPoules();
           /*localStorage.setItem(
             `${config.categorie}-${config.genre}-${config.niveauActuel}`,
             JSON.stringify(poules),
@@ -602,6 +609,16 @@ document.addEventListener("DOMContentLoaded", () => {
     <span>
         ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
         &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
         ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
     </span>
 </span>
@@ -649,12 +666,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Mode normal : listener highlight carte sur les cards uniquement
       document.querySelectorAll(".pool-card").forEach((card, i) => {
-        card.addEventListener("click", () => {highlightPoule(i); // Source - https://stackoverflow.com/a/1145012
-// Posted by SavoryBytes, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-04-22, License - CC BY-SA 4.0
-
-window.scrollTo(0, 0);
-});
+        card.addEventListener("click", () => {
+          highlightPoule(i);
+          window.scrollTo(0, 0);
+        });
       });
     }
   }
@@ -697,7 +712,8 @@ window.scrollTo(0, 0);
 
         const equipes = poulesActuelles.flatMap((p) => p.equipes);
         afficherCarte(equipes);
-        afficherPoules(poulesActuelles);
+        afficherPoules();
+        highlightToutesLesPoules();
 
         const csvStocke = localStorage.getItem(
           `csv_contenu_niveau${config.niveauActuel}`,
