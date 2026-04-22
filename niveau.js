@@ -346,31 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
   }
 
-  function highlightToutesLesPoules(poules) {
-    const equipeIdToCouleur = new Map();
-    poules.forEach((poule, i) => {
-      const couleur = PALETTE[i % PALETTE.length];
-      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
-    });
-    markers.forEach((m) => {
-      const couleur = equipeIdToCouleur.get(m.equipeId);
-      if (couleur) {
-        m.setIcon(createPinIcon(couleur, 1));
-        m.setZIndexOffset(1000);
-      } else {
-        m.setIcon(createPinIcon("#888780", 0.25));
-        m.setZIndexOffset(0);
-      }
-    });
-    highlightPoule._actif = null;
-  }
 
-  function resetMarkers() {
-    markers.forEach((m) => {
-      m.setIcon(createPinIcon("#888780", 1));
-      m.setZIndexOffset(0);
-    });
-  }
 
   /* ── MODE ÉDITION ───────────────────────────────────────────────────────── */
   let modeEdition = false;
@@ -673,7 +649,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Mode normal : listener highlight carte sur les cards uniquement
       document.querySelectorAll(".pool-card").forEach((card, i) => {
-        card.addEventListener("click", () => highlightPoule(i));
+        card.addEventListener("click", () => {highlightPoule(i); // Source - https://stackoverflow.com/a/1145012
+// Posted by SavoryBytes, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-04-22, License - CC BY-SA 4.0
+
+window.scrollTo(0, 0);
+});
       });
     }
   }
