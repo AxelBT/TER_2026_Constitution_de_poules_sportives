@@ -183,6 +183,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  function highlightToutesLesPoules(poules) {
+    const equipeIdToCouleur = new Map();
+    poules.forEach((poule, i) => {
+      const couleur = PALETTE[i % PALETTE.length];
+      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
+    });
+    markers.forEach((m) => {
+      const couleur = equipeIdToCouleur.get(m.equipeId);
+      if (couleur) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.25));
+        m.setZIndexOffset(0);
+      }
+    });
+    highlightPoule._actif = null;
+  }
+
   for (const btn of btnsGenerer) {
     btn.addEventListener("click", () => {
       const fileInput = document.getElementById("file_csv_niveau");
@@ -211,6 +230,8 @@ document.addEventListener("DOMContentLoaded", () => {
         poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
         afficherCarte(equipes);
         afficherPoules(poulesActuelles);
+        highlightToutesLesPoules(poulesActuelles);
+
         /*localStorage.setItem(
           `${config.categorie}-${config.genre}-${config.niveauActuel}`,
           JSON.stringify(poules),
@@ -261,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const m = L.marker([lat, lng], { icon: createPinIcon("#888780") });
         m.bindPopup(
-          `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC "+c.ctc_num : "Club "+c.num_club}</span>`,
+          `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC " + c.ctc_num : "Club " + c.num_club}</span>`,
         );
         m.addTo(map);
         m.clubId = c.num_club;
@@ -385,18 +406,24 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
           selection.el.classList.remove("selected"); // Retire le style du premier
           selection = { pi, eid, el }; // Enregistre le nouveau
           el.classList.add("selected"); // Ajoute le style au nouveau
-          return; 
+          return;
         }
 
-        if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
           selection.el.classList.remove("selected"); // Retire le style du premier
           selection = { pi, eid, el }; // Enregistre le nouveau
           el.classList.add("selected"); // Ajoute le style au nouveau
-          return; 
+          return;
         }
 
         // 2ème sélection → swap
@@ -468,10 +495,10 @@ document.addEventListener("DOMContentLoaded", () => {
                   poulesActuelles[sel.pi].equipes[iA],
                   poulesActuelles[pi].equipes[iB],
                 ] = [
-                    poulesActuelles[pi].equipes[iB],
-                    poulesActuelles[sel.pi].equipes[iA],
-                  ];
-                  console.log(poulesActuelles);
+                  poulesActuelles[pi].equipes[iB],
+                  poulesActuelles[sel.pi].equipes[iA],
+                ];
+                console.log(poulesActuelles);
                 poulesActuelles[sel.pi].distance_moyenne =
                   calculerDistanceMoyenne(poulesActuelles[sel.pi]);
                 poulesActuelles[pi].distance_moyenne = calculerDistanceMoyenne(
@@ -567,7 +594,13 @@ document.addEventListener("DOMContentLoaded", () => {
                      data-poule-index="${pi}"
                      data-equipe-id="${e.id}">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
-                    <span>${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}</span>
+                    <span class="pool-team-name">
+    <span>
+        ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
+        &nbsp;&nbsp;&nbsp;
+        ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
+    </span>
+</span>
                     <span class="pool-team-club">${e.distance_totale} Km</span>
                 </div>
             `,
@@ -630,10 +663,9 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-
   document
     .getElementById("btn-generer")
-    .addEventListener("click", () => onGenerer((config.mode)));
+    .addEventListener("click", () => onGenerer(config.mode));
 
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
@@ -648,7 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       //const poules = JSON.parse(poulesStockees);
       poulesActuelles = poulesStockees ? JSON.parse(poulesStockees) : [];
-      if(poulesActuelles.length>0){
+      if (poulesActuelles.length > 0) {
         document.getElementById("nb_poules").value = poulesActuelles.length;
         document.getElementById("nb_max_equipes").value = Math.max(
           ...poulesActuelles.map((p) => p.nb_max),
