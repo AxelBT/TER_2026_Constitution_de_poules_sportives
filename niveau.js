@@ -290,7 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
-      resetMarkers();
+      //resetMarkers();
+      highlightToutesLesPoules();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
@@ -611,6 +612,13 @@ document.addEventListener("DOMContentLoaded", () => {
         &nbsp;&nbsp;&nbsp;
         &nbsp;&nbsp;&nbsp;
         &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
         ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
     </span>
 </span>
@@ -658,7 +666,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Mode normal : listener highlight carte sur les cards uniquement
       document.querySelectorAll(".pool-card").forEach((card, i) => {
-        card.addEventListener("click", () => highlightPoule(i));
+        card.addEventListener("click", () => {
+          highlightPoule(i);
+          window.scrollTo(0, 0);
+        });
       });
     }
   }
