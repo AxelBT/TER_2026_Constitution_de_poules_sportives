@@ -12,84 +12,6 @@ if (!config) {
 }
 
 
-
-
-
-/*export function traiterCSV(contenu) {
-    const lignes = contenu.split("\n");
-    const data = [];
-    
-    
-    const mapClubs = {};
-    clubs.forEach(c => { mapClubs[c.id] = c; });
-
-    for (let i = 0; i < lignes.length; i++) {
-        if (lignes[i].trim() === "") continue;
-        
-        const colonnes = lignes[i].split(";");
-        const idClubEquipe = colonnes[1]; // L'ID club renseigné pour l'équipe
-
-        if (!mapClubs[idClubEquipe]) {
-            const nomEquipe = colonnes[2] || "Inconnue";
-            // On affiche le toast d'erreur
-            toast(`Erreur : Le club (ID: ${idClubEquipe}) de l'équipe "${nomEquipe}" est introuvable dans le fichier des clubs.`, "error");
-            console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
-            
-            
-            toast("imposssible de générer","error");
-            return; 
-        }
-
-        data.push({
-            id: colonnes[0],
-            id_club: idClubEquipe,
-            nom: colonnes[2],
-            niveau: parseInt(colonnes[3]),
-            effectif: parseInt(colonnes[4]),
-            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
-            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
-        });
-    }
-
-    return data;
-}*/
-/*export function traiterCSV(contenu) {
-    const lignes = contenu.split("\n");
-    const data = [];
-    const equipesInconnues = [];
-    
-    const mapClubs = {};
-    clubs.forEach(c => { mapClubs[c.id] = c; });
-
-    for (let i = 0; i < lignes.length; i++) {
-        if (lignes[i].trim() === "") continue;
-        
-        const colonnes = lignes[i].split(";");
-        const idClubEquipe = colonnes[1];
-
-        if (!mapClubs[idClubEquipe]) {
-            const nomEquipe = colonnes[2] || "Inconnue";
-            equipesInconnues.push({ nom: nomEquipe, id_club: idClubEquipe });
-            continue;
-        }
-        data.push({
-            id: colonnes[0],
-            id_club: idClubEquipe,
-            nom: colonnes[2],
-            niveau: parseInt(colonnes[3]),
-            effectif: parseInt(colonnes[4]),
-            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
-            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
-        });
-    }
-
-    if (equipesInconnues.length > 0) {
-        toast("Impossible de générer", "error");
-        return { succes: false, tableau: equipesInconnues };
-    }
-
-    return { succes: true, tableau: data };
-}*/
 function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
     let num = parseInt(numEquipe);
     
@@ -105,13 +27,24 @@ function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
 }
 
 function verifierCoherenceClub(data, numClub, nomClub) {
-    const existant = data.find(e => e.id_club === numClub);
+    const existant = data.find(e => e.num_club === numClub);
     if (!existant) return true; 
-    return existant.nom_club === nomClub;
+    return existant.nom_club.toLowerCase() === nomClub.toLowerCase();
 }
 
-export function traiterCSV(contenu) {
-    console.log(contenu);
+function verifierCoherenceCTC(data, ctcNum, ctcNom) {
+    const existant = data.find(e => 
+        e.type === "CTC" && 
+        e.ctc_num === ctcNum
+    );
+    
+    if (!existant) return true; 
+    
+    return existant.ctc_nom.toLowerCase() === ctcNom.toLowerCase();
+}
+
+export async function traiterCSV(contenu) {
+    //console.log("Contenu reçu (longueur) :", contenu.length);
     const lignes = contenu.split("\n");
     const data = [];
     const equipesInconnues = [];
@@ -119,9 +52,9 @@ export function traiterCSV(contenu) {
     const mapClubs = {};
     clubs.forEach(c => { mapClubs[c.id_club] = c; });
 
-    const headers = lignes[0].split(",").map(h => h.trim());
+    const headers = lignes[0].split(",").map(h => h.trim().toUpperCase());
 
-    const idx = {
+    const idx = {   // n'importe quel ordre 
         club_nom:   headers.indexOf("CLUB_NOM"),
         club_num:   headers.indexOf("CLUB_NUMERO"),
         type:       headers.indexOf("TYPE_EQUIPE"),
@@ -131,18 +64,37 @@ export function traiterCSV(contenu) {
         niveau:     headers.indexOf("NIVEAU"),
     };
 
+    const colonnesManquantes = Object.entries(idx).filter(([_, val]) => val === -1).map(([cle, _]) => cle);
+
+    if (colonnesManquantes.length > 0) {
+        toast(`Colonnes introuvables dans le fichier : ${colonnesManquantes.join(", ")}`, "error");
+        return { succes: false, tableau: [] };
+    }
+
     for (let i = 1; i < lignes.length; i++) {
-        if (lignes[i].trim() === "") continue;
+        if (lignes[i].trim() === "") continue; // ignorer les lignes vides 
 
         const colonnes  = lignes[i].split(",");
         const type      = colonnes[idx.type]?.trim();
-        const estCTC    = type === "Coopération Territoriale Club";
+        const estCTC    = !(type.toLowerCase() === "club"); // si c'est pas un club c'est une ctc (à modifier)
         const numClub   = colonnes[idx.club_num]?.trim();
         const nomClub   = colonnes[idx.club_nom]?.trim();
         const niveau    = colonnes[idx.niveau]?.trim();
         const ctcNom    = colonnes[idx.ctc_nom]?.trim();
         const ctcNum    = colonnes[idx.ctc_num]?.trim();
         const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
+
+        // on vérifie si toutes les infos d'une équipe sont fournies 
+        let champManquant = !numClub || !nomClub || isNaN(numEquipeRaw) || !type;
+        if (estCTC && (!ctcNom || !ctcNum)) champManquant = true;
+        
+        // Exception pour le niveau
+        if (config.mode === "niveau" && !niveau) champManquant = true;
+
+        if (champManquant) {
+            toast(`Données incomplètes :  ligne ${i+1}`,"error");
+            return { succes: false, tableau: [] };;
+        }
 
         const club = mapClubs[numClub];
         if (!club) {
@@ -151,6 +103,7 @@ export function traiterCSV(contenu) {
             continue;
         }
 
+        // vérifier que pour le même numclub on a toujours le même nomclub
         if (!verifierCoherenceClub(data, numClub, nomClub)) {
             toast(
                 `Incohérence : le numéro ${numClub} correspond à deux noms de clubs différents.`,
@@ -159,16 +112,27 @@ export function traiterCSV(contenu) {
             return { succes: false, tableau: [] };
         }
 
+        if (estCTC){
+            if (!verifierCoherenceCTC(data, ctcNum, ctcNom)) {
+                toast(
+                    `Incohérence : le numéro ${numClub} correspond à deux noms de CTC différents.`,
+                    "error"
+                );
+                return { succes: false, tableau: [] };
+            }
+        }
+
         const numEquipe = trouverNumeroEquipeDisponible(data, numClub, numEquipeRaw,estCTC);
 
         if (numEquipe !== numEquipeRaw) {
-            console.warn(
-                `Doublon détecté : club ${numClub}, équipe ${numEquipeRaw} → renommée en ${numEquipe}`
+            toast(
+                `Doublon détecté : club ${numClub}, équipe ${numEquipeRaw} → renommée en ${numEquipe}`,
+                "warn"
             );
         }
 
         const equipe = {
-            id: nomClub.concat("-", numEquipe),
+            id: estCTC ? `${ctcNom}-${numEquipe}` : `${nomClub}-${numEquipe}`,
             num_club:   numClub,
             nom_club:  nomClub,
             numero:    numEquipe,
@@ -193,7 +157,6 @@ export function traiterCSV(contenu) {
 
     return { succes: true, tableau: data };
 }
-
 
 // Distance Haversine entre deux équipes (en km)
 export function distance(e1, e2) {
@@ -226,23 +189,6 @@ export function calculerBarycentre(equipes) {
     };
 }
 
-/*function definirCapacitesPoules(nb_poules, total_equipes) {
-    const base = Math.floor(total_equipes / nb_poules);
-    const reste = total_equipes % nb_poules;
-
-    let capacites = [];
-
-    for (let i = 0; i < nb_poules; i++) {
-        if (i < reste) {
-            capacites.push(base + 1);
-        } else {
-            capacites.push(base);
-        }
-    }
-
-    return capacites;
-}*/
-
 function definirCapacitesPoules(nb_poules, total_equipes) {
     const base  = Math.floor(total_equipes / nb_poules);
     const reste = total_equipes % nb_poules;
@@ -273,18 +219,6 @@ function initialiserPoules(nb_poules, niveau, capacites) {
         barycentre: null
     }));
 }
-
-/*function trierParTailleClub(equipes) {
-    const count = {};
-    equipes.forEach(e => {
-        count[e.id_club] = (count[e.id_club] || 0) + 1;
-    });
-
-    // trier
-    return equipes.sort((a, b) => {
-        return count[b.id_club] - count[a.id_club];
-    });
-}*/
 
 function trierParIsolement(equipes, centreGlobal) {
     return [...equipes].sort((a, b) => {
@@ -416,7 +350,6 @@ function tenterSauvetage(poules, equipe) {
     return true;
 }
 
-
 function verifierSaturationClub(equipes, nb_poules) {
     const count = {};
 
@@ -427,79 +360,6 @@ function verifierSaturationClub(equipes, nb_poules) {
     const max = Math.max(...Object.values(count));
     return max <= nb_poules;
 }
-
-/*function equilibrerDistancesMoyennes(poules) {
-    let changementGlobal = true;
-    let iterations = 0;
-    const MAX_ITERATIONS = 20;
-
-    while (changementGlobal && iterations < MAX_ITERATIONS) {
-        changementGlobal = false;
-        iterations++;
-
-        for (let i = 0; i < poules.length; i++) {
-            for (let j = i + 1; j < poules.length; j++) {
-                let p1 = poules[i];
-                let p2 = poules[j];
-
-                let meilleurEchange = null;
-                let plusGrandGain = 0;
-
-                for (let idx1 = 0; idx1 < p1.equipes.length; idx1++) {
-                    for (let idx2 = 0; idx2 < p2.equipes.length; idx2++) {
-                        let e1 = p1.equipes[idx1];
-                        let e2 = p2.equipes[idx2];
-
-                        // 1. Vérification des contraintes de club
-                        if (verifierClubDansPoule(p1, e2) || verifierClubDansPoule(p2, e1)) continue;
-
-                        // 2. Création des copies pour simuler le mouvement
-                        let copieEquipes1 = [...p1.equipes];
-                        let copieEquipes2 = [...p2.equipes];
-
-                        // On effectue l'échange dans les copies
-                        copieEquipes1.splice(idx1, 1, e2); // remplace e1 par e2
-                        copieEquipes2.splice(idx2, 1, e1); // remplace e2 par e1
-
-                        // 3. Recalcul des barycentres virtuels
-                        let barycentreVirtuel1 = calculerBarycentre(copieEquipes1);
-                        let barycentreVirtuel2 = calculerBarycentre(copieEquipes2);
-
-                        // 4. Comparaison des distances
-                        // Situation AVANT : e1 vs centre actuel de p1 + e2 vs centre actuel de p2
-                        let distAvant = distance(e1, p1.barycentre) + distance(e2, p2.barycentre);
-                        
-                        // Situation APRÈS : e2 vs son futur centre + e1 vs son futur centre
-                        let distApres = distance(e2, barycentreVirtuel1) + distance(e1, barycentreVirtuel2);
-
-                        let gain = distAvant - distApres;
-
-                        if (gain > plusGrandGain) {
-                            plusGrandGain = gain;
-                            meilleurEchange = { idx1, idx2 };
-                        }
-                    }
-                }
-
-                if (meilleurEchange) {
-                    const { idx1, idx2 } = meilleurEchange;
-                    // Application réelle de l'échange
-                    let e1 = p1.equipes[idx1];
-                    let e2 = p2.equipes[idx2];
-
-                    p1.equipes[idx1] = e2;
-                    p2.equipes[idx2] = e1;
-
-                    // Mise à jour des vrais barycentres
-                    p1.barycentre = calculerBarycentre(p1.equipes);
-                    p2.barycentre = calculerBarycentre(p2.equipes);
-
-                    changementGlobal = true;
-                }
-            }
-        }
-    }
-}*/
 
 function equilibrerDistancesMoyennes(poules) {
     let changement = true;
@@ -575,7 +435,6 @@ function equilibrerDistancesMoyennes(poules) {
     return poules;
 }
 
-
 export function calculerDistanceMoyenne(poule) {
     if (poule.equipes.length <= 1) return 0;
 
@@ -611,11 +470,10 @@ export function finaliserStatistiquesPoules(poules) {
         }
         
         poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(3);
+            e.distance_totale = e.distance_totale.toFixed(2);
         });
     });
 }
-
 
 export function generer_poules(equipes, nb_poules, nb_max) {
     const nb_equipes = equipes.length;
@@ -624,7 +482,8 @@ export function generer_poules(equipes, nb_poules, nb_max) {
         toast("Capacité insuffisante : augmente le nombre de poules ou la taille max.", "error");
         return;
     }
- 
+    
+    // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules 
     if (nb_equipes <= nb_poules * (nb_max - 1)) {
         toast("Trop peu d'équipes : réduis le nombre de poules ou la taille max.", "error");
         return;
@@ -632,6 +491,11 @@ export function generer_poules(equipes, nb_poules, nb_max) {
     
     if (!verifierSaturationClub(equipes, nb_poules)) {
         toast("Trop d\'équipes d\'un même club pour le nombre de poules.", "error");
+        return;
+    }
+    // on ne peut pas avoir des exempts dans des poules de deux 
+    if(nb_max === 2 && nb_equipes != (nb_max*nb_poules)){
+        toast("Pas d\'exempts dans des poules de 2.", "error");
         return;
     }
  
@@ -663,8 +527,111 @@ export function generer_poules(equipes, nb_poules, nb_max) {
 }
 
 
+/*export function traiterCSV(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    
+    
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id] = c; });
 
+    for (let i = 0; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+        
+        const colonnes = lignes[i].split(";");
+        const idClubEquipe = colonnes[1]; // L'ID club renseigné pour l'équipe
 
+        if (!mapClubs[idClubEquipe]) {
+            const nomEquipe = colonnes[2] || "Inconnue";
+            // On affiche le toast d'erreur
+            toast(`Erreur : Le club (ID: ${idClubEquipe}) de l'équipe "${nomEquipe}" est introuvable dans le fichier des clubs.`, "error");
+            console.error(`Coordonnées manquantes pour l'équipe : ${nomEquipe}`);
+            
+            
+            toast("imposssible de générer","error");
+            return; 
+        }
+
+        data.push({
+            id: colonnes[0],
+            id_club: idClubEquipe,
+            nom: colonnes[2],
+            niveau: parseInt(colonnes[3]),
+            effectif: parseInt(colonnes[4]),
+            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
+            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
+        });
+    }
+
+    return data;
+}*/
+
+/*export function traiterCSV(contenu) {
+    const lignes = contenu.split("\n");
+    const data = [];
+    const equipesInconnues = [];
+    
+    const mapClubs = {};
+    clubs.forEach(c => { mapClubs[c.id] = c; });
+
+    for (let i = 0; i < lignes.length; i++) {
+        if (lignes[i].trim() === "") continue;
+        
+        const colonnes = lignes[i].split(";");
+        const idClubEquipe = colonnes[1];
+
+        if (!mapClubs[idClubEquipe]) {
+            const nomEquipe = colonnes[2] || "Inconnue";
+            equipesInconnues.push({ nom: nomEquipe, id_club: idClubEquipe });
+            continue;
+        }
+        data.push({
+            id: colonnes[0],
+            id_club: idClubEquipe,
+            nom: colonnes[2],
+            niveau: parseInt(colonnes[3]),
+            effectif: parseInt(colonnes[4]),
+            latitude: parseFloat(mapClubs[idClubEquipe].latitude),
+            longitude: parseFloat(mapClubs[idClubEquipe].longitude)
+        });
+    }
+
+    if (equipesInconnues.length > 0) {
+        toast("Impossible de générer", "error");
+        return { succes: false, tableau: equipesInconnues };
+    }
+
+    return { succes: true, tableau: data };
+}*/
+
+/*function definirCapacitesPoules(nb_poules, total_equipes) {
+    const base = Math.floor(total_equipes / nb_poules);
+    const reste = total_equipes % nb_poules;
+
+    let capacites = [];
+
+    for (let i = 0; i < nb_poules; i++) {
+        if (i < reste) {
+            capacites.push(base + 1);
+        } else {
+            capacites.push(base);
+        }
+    }
+
+    return capacites;
+}*/
+
+/*function trierParTailleClub(equipes) {
+    const count = {};
+    equipes.forEach(e => {
+        count[e.id_club] = (count[e.id_club] || 0) + 1;
+    });
+
+    // trier
+    return equipes.sort((a, b) => {
+        return count[b.id_club] - count[a.id_club];
+    });
+}*/
 
 /*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
@@ -842,6 +809,78 @@ export function generer_poules(equipes, nb_poules, nb_max) {
 
 }*/
 
+/*function equilibrerDistancesMoyennes(poules) {
+    let changementGlobal = true;
+    let iterations = 0;
+    const MAX_ITERATIONS = 20;
+
+    while (changementGlobal && iterations < MAX_ITERATIONS) {
+        changementGlobal = false;
+        iterations++;
+
+        for (let i = 0; i < poules.length; i++) {
+            for (let j = i + 1; j < poules.length; j++) {
+                let p1 = poules[i];
+                let p2 = poules[j];
+
+                let meilleurEchange = null;
+                let plusGrandGain = 0;
+
+                for (let idx1 = 0; idx1 < p1.equipes.length; idx1++) {
+                    for (let idx2 = 0; idx2 < p2.equipes.length; idx2++) {
+                        let e1 = p1.equipes[idx1];
+                        let e2 = p2.equipes[idx2];
+
+                        // 1. Vérification des contraintes de club
+                        if (verifierClubDansPoule(p1, e2) || verifierClubDansPoule(p2, e1)) continue;
+
+                        // 2. Création des copies pour simuler le mouvement
+                        let copieEquipes1 = [...p1.equipes];
+                        let copieEquipes2 = [...p2.equipes];
+
+                        // On effectue l'échange dans les copies
+                        copieEquipes1.splice(idx1, 1, e2); // remplace e1 par e2
+                        copieEquipes2.splice(idx2, 1, e1); // remplace e2 par e1
+
+                        // 3. Recalcul des barycentres virtuels
+                        let barycentreVirtuel1 = calculerBarycentre(copieEquipes1);
+                        let barycentreVirtuel2 = calculerBarycentre(copieEquipes2);
+
+                        // 4. Comparaison des distances
+                        // Situation AVANT : e1 vs centre actuel de p1 + e2 vs centre actuel de p2
+                        let distAvant = distance(e1, p1.barycentre) + distance(e2, p2.barycentre);
+                        
+                        // Situation APRÈS : e2 vs son futur centre + e1 vs son futur centre
+                        let distApres = distance(e2, barycentreVirtuel1) + distance(e1, barycentreVirtuel2);
+
+                        let gain = distAvant - distApres;
+
+                        if (gain > plusGrandGain) {
+                            plusGrandGain = gain;
+                            meilleurEchange = { idx1, idx2 };
+                        }
+                    }
+                }
+
+                if (meilleurEchange) {
+                    const { idx1, idx2 } = meilleurEchange;
+                    // Application réelle de l'échange
+                    let e1 = p1.equipes[idx1];
+                    let e2 = p2.equipes[idx2];
+
+                    p1.equipes[idx1] = e2;
+                    p2.equipes[idx2] = e1;
+
+                    // Mise à jour des vrais barycentres
+                    p1.barycentre = calculerBarycentre(p1.equipes);
+                    p2.barycentre = calculerBarycentre(p2.equipes);
+
+                    changementGlobal = true;
+                }
+            }
+        }
+    }
+}*/
 
 /*function scoreGlobal(poules) {
     const distances = poules.map(p => parseFloat(p.distance_moyenne));

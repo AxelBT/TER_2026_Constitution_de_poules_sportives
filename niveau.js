@@ -192,33 +192,43 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = async function (e) {
         const contenu = e.target.result;
-        const resultat = traiterCSV(contenu);
+        const resultat = await traiterCSV(contenu);
         if (!resultat.succes) {
           // afficher plutard les noms des équipes
           console.error("Équipes inconnues détectées :", resultat.tableau);
           return;
         }
-        const equipes = resultat.tableau;
-        localStorage.setItem(`csv_niveau${config.niveauActuel}`, contenu);
+        localStorage.setItem(
+          `csv_contenu_niveau${config.niveauActuel}`,
+          contenu,
+        );
         localStorage.setItem(`csv_nom_niveau${config.niveauActuel}`, file.name);
+        const equipes = resultat.tableau;
+        afficherCarte(equipes);
+        toast(
+          `${equipes.length} équipes affichées (mode : ${config.mode === "niveau" ? "par niveau" : "par distance"}).`,
+          "info",
+        );
         //localStorage.setItem("equipes", JSON.stringify(equipes));
         const nb_poules = parseInt(document.getElementById("nb_poules").value);
         const nb_max = parseInt(
           document.getElementById("nb_max_equipes").value,
         );
         poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
-        afficherCarte(equipes);
-        afficherPoules(poulesActuelles);
+        if (poulesActuelles) {
+          afficherPoules(poulesActuelles);
+          highlightToutesLesPoules(poulesActuelles);
+          toast(
+            `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
+            "success",
+          );
+        }
         /*localStorage.setItem(
           `${config.categorie}-${config.genre}-${config.niveauActuel}`,
           JSON.stringify(poules),
         );*/
-        toast(
-          `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
-          "success",
-        );
       };
       reader.readAsText(file);
     });
@@ -261,10 +271,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const m = L.marker([lat, lng], { icon: createPinIcon("#888780") });
         m.bindPopup(
-          `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC "+c.ctc_num : "Club "+c.num_club}</span>`,
+          `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC " + c.ctc_num : "Club " + c.num_club}</span>`,
         );
         m.addTo(map);
-        m.clubId = c.num_club;
+        m.clubId = c.type === "CTC" ? c.ctc_num : c.num_club;
         m.equipeId = c.id;
         markers.push(m);
         bounds.push([lat, lng]);
@@ -296,8 +306,9 @@ document.addEventListener("DOMContentLoaded", () => {
         m.setIcon(createPinIcon(couleur, 1));
         m.setZIndexOffset(1000);
         const equipe = poule.equipes.find((e) => e.id === m.equipeId); // ← idem
+        //const nom = (equipe.type==="CTC") ? equipe.ctc_nom + " " + equipe.numero : equipe.nom_club + " " + equipe.numero;
         m.bindPopup(
-          `<strong>${equipe ? equipe.nom_club + " " + equipe.numero : "Inconnu"}</strong><br><span style="color:#888">Club ${m.clubId}</span>`,
+          `<strong>${equipe ? (equipe.type === "CTC" ? equipe.ctc_nom + " " + equipe.numero : equipe.nom_club + " " + equipe.numero) : "Inconnu"}</strong><br><span style="color:#888">${m.clubId}</span>`,
         );
       } else {
         m.setIcon(createPinIcon("#888780", 0.25));
@@ -314,6 +325,25 @@ document.addEventListener("DOMContentLoaded", () => {
         pBounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [60, 60], maxZoom: 10 },
       );
+  }
+
+  function highlightToutesLesPoules(poules) {
+    const equipeIdToCouleur = new Map();
+    poules.forEach((poule, i) => {
+      const couleur = PALETTE[i % PALETTE.length];
+      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
+    });
+    markers.forEach((m) => {
+      const couleur = equipeIdToCouleur.get(m.equipeId);
+      if (couleur) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.25));
+        m.setZIndexOffset(0);
+      }
+    });
+    highlightPoule._actif = null;
   }
 
   function resetMarkers() {
@@ -385,18 +415,24 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
           selection.el.classList.remove("selected"); // Retire le style du premier
           selection = { pi, eid, el }; // Enregistre le nouveau
           el.classList.add("selected"); // Ajoute le style au nouveau
-          return; 
+          return;
         }
 
-        if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
           selection.el.classList.remove("selected"); // Retire le style du premier
           selection = { pi, eid, el }; // Enregistre le nouveau
           el.classList.add("selected"); // Ajoute le style au nouveau
-          return; 
+          return;
         }
 
         // 2ème sélection → swap
@@ -468,10 +504,10 @@ document.addEventListener("DOMContentLoaded", () => {
                   poulesActuelles[sel.pi].equipes[iA],
                   poulesActuelles[pi].equipes[iB],
                 ] = [
-                    poulesActuelles[pi].equipes[iB],
-                    poulesActuelles[sel.pi].equipes[iA],
-                  ];
-                  console.log(poulesActuelles);
+                  poulesActuelles[pi].equipes[iB],
+                  poulesActuelles[sel.pi].equipes[iA],
+                ];
+                console.log(poulesActuelles);
                 poulesActuelles[sel.pi].distance_moyenne =
                   calculerDistanceMoyenne(poulesActuelles[sel.pi]);
                 poulesActuelles[pi].distance_moyenne = calculerDistanceMoyenne(
@@ -619,7 +655,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ====================================================
        BOUTONS GÉNÉRER
        ==================================================== */
-  function onGenerer(mode) {
+  /*function onGenerer(mode) {
     const equipes = traiterCSV(
       localStorage.getItem(`csv_niveau${config.niveauActuel}`),
     );
@@ -633,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document
     .getElementById("btn-generer")
-    .addEventListener("click", () => onGenerer((config.mode)));
+    .addEventListener("click", () => onGenerer((config.mode)));*/
 
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
@@ -648,7 +684,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       //const poules = JSON.parse(poulesStockees);
       poulesActuelles = poulesStockees ? JSON.parse(poulesStockees) : [];
-      if(poulesActuelles.length>0){
+      if (poulesActuelles.length > 0) {
         document.getElementById("nb_poules").value = poulesActuelles.length;
         document.getElementById("nb_max_equipes").value = Math.max(
           ...poulesActuelles.map((p) => p.nb_max),
@@ -659,7 +695,7 @@ document.addEventListener("DOMContentLoaded", () => {
         afficherPoules(poulesActuelles);
 
         const csvStocke = localStorage.getItem(
-          `csv_niveau${config.niveauActuel}`,
+          `csv_contenu_niveau${config.niveauActuel}`,
         );
         const csvNom = localStorage.getItem(
           `csv_nom_niveau${config.niveauActuel}`,
