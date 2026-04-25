@@ -63,7 +63,7 @@
                     </div>
                     <div>
                         <label for="nb_max_equipes">Max / poule</label>
-                        <input type="number" id="nb_max_equipes" min="1" max="40" value="5">
+                        <input type="number" id="nb_max_equipes" min="3" max="40" value="5">
                     </div>
                 </div>
 
@@ -71,7 +71,6 @@
                 <div class="btn-generate-row">
                     
                     <button id="btn-generer" class="btn-generate btn-generate--half btn-generate--alt">
-                        
                         Générer les poules
                     </button>
                 </div>
@@ -99,6 +98,37 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
         </div>
+
+        <!-- Section erreurs -->
+<div class="errors-panel" id="errors-panel" style="display:none">
+
+    <!-- Clubs non géocodés -->
+    <div class="error-block" id="block-geocodage" style="display:none">
+        <div class="error-block-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span class="error-block-title">Clubs sans coordonnées</span>
+            <span class="error-count" id="count-geocodage"></span>
+        </div>
+        <ul class="error-list" id="list-geocodage"></ul>
+    </div>
+
+    <!-- Équipes non placées -->
+    <div class="error-block" id="block-equipes" style="display:none">
+        <div class="error-block-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span class="error-block-title">Équipes non placées</span>
+            <span class="error-count" id="count-equipes"></span>
+        </div>
+        <ul class="error-list" id="list-equipes"></ul>
+    </div>
+
+</div>
 
     </aside>
 

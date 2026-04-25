@@ -3,6 +3,7 @@ import {
   generer_poules,
   verifierClubDansPoule,
   calculerDistanceMoyenne,
+  verifierSaturationClub,
   finaliserStatistiquesPoules,
   calculerBarycentre,
   ajouterEquipeDansPoule,
@@ -120,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const btnPrev = document.getElementById("btn-prev");
   const btnNext = document.getElementById("btn-next");
-  const btnsGenerer = document.getElementsByClassName("btn-generate");
+  const btnGenerer = document.getElementById("btn-generer");
   const fileInput = document.getElementById("file_csv_niveau");
   const fileLabel = document.getElementById("file-label");
 
@@ -183,75 +184,79 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  function highlightToutesLesPoules(poules) {
-    const equipeIdToCouleur = new Map();
-    poules.forEach((poule, i) => {
-      const couleur = PALETTE[i % PALETTE.length];
-      poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
-    });
-    markers.forEach((m) => {
-      const couleur = equipeIdToCouleur.get(m.equipeId);
-      if (couleur) {
-        m.setIcon(createPinIcon(couleur, 1));
-        m.setZIndexOffset(1000);
-      } else {
-        m.setIcon(createPinIcon("#888780", 0.25));
-        m.setZIndexOffset(0);
-      }
-    });
-    highlightPoule._actif = null;
-  }
-
-  for (const btn of btnsGenerer) {
-    btn.addEventListener("click", () => {
-      const fileInput = document.getElementById("file_csv_niveau");
-      const file = fileInput.files[0];
-      if (!file) {
-        toast("Veuillez sélectionner un fichier CSV", "error");
+  btnGenerer.addEventListener("click", () => {
+    const fileInput = document.getElementById("file_csv_niveau");
+    const file = fileInput.files[0];
+    if (!file) {
+      toast("Veuillez sélectionner un fichier CSV", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const contenu = e.target.result;
+      const resultat = await traiterCSV(contenu);
+      if (!resultat.succes) {
+        // afficher plutard les noms des équipes
+        console.error("Équipes inconnues détectées :", resultat.tableau);
         return;
       }
-      const reader = new FileReader();
-      reader.onload = async function (e) {
-        const contenu = e.target.result;
-        const resultat = await traiterCSV(contenu);
-        if (!resultat.succes) {
-          // afficher plutard les noms des équipes
-          console.error("Équipes inconnues détectées :", resultat.tableau);
-          return;
-        }
-        localStorage.setItem(
-          `csv_contenu_niveau${config.niveauActuel}`,
-          contenu,
-        );
-        localStorage.setItem(`csv_nom_niveau${config.niveauActuel}`, file.name);
-        const equipes = resultat.tableau;
-        afficherCarte(equipes);
+      localStorage.setItem(`csv_contenu_niveau${config.niveauActuel}`, contenu);
+      localStorage.setItem(`csv_nom_niveau${config.niveauActuel}`, file.name);
+      const equipes = resultat.tableau;
+      afficherCarte(equipes);
+      toast(
+        `${equipes.length} équipes affichées (mode : ${config.mode === "niveau" ? "par niveau" : "par distance"}).`,
+        "info",
+      );
+      //localStorage.setItem("equipes", JSON.stringify(equipes));
+      const nb_poules = parseInt(document.getElementById("nb_poules").value);
+      const nb_max = parseInt(document.getElementById("nb_max_equipes").value);
+      const nb_equipes = equipes.length;
+      if (nb_poules * nb_max < nb_equipes) {
         toast(
-          `${equipes.length} équipes affichées (mode : ${config.mode === "niveau" ? "par niveau" : "par distance"}).`,
-          "info",
+          "Capacité insuffisante : augmente le nombre de poules ou la taille max.",
+          "error",
         );
-        //localStorage.setItem("equipes", JSON.stringify(equipes));
-        const nb_poules = parseInt(document.getElementById("nb_poules").value);
-        const nb_max = parseInt(
-          document.getElementById("nb_max_equipes").value,
+        return;
+      }
+
+      // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules
+      if (nb_equipes <= nb_poules * (nb_max - 1)) {
+        toast(
+          "Trop peu d'équipes : réduis le nombre de poules ou la taille max.",
+          "error",
         );
-        poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
-        if (poulesActuelles) {
-          afficherPoules(poulesActuelles);
-          highlightToutesLesPoules(poulesActuelles);
-          toast(
-            `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
-            "success",
-          );
-        }
-        /*localStorage.setItem(
+        return;
+      }
+
+      if (!verifierSaturationClub(equipes, nb_poules)) {
+        toast(
+          "Trop d\'équipes d\'un même club pour le nombre de poules.",
+          "error",
+        );
+        return;
+      }
+      // on ne peut pas avoir des exempts dans des poules de deux
+      /*if (nb_max === 2 && nb_equipes != nb_max * nb_poules) {
+        toast("Pas d\'exempts dans des poules de 2.", "error");
+        return;
+      }*/
+      poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
+      if (poulesActuelles) {
+        afficherPoules();
+        highlightToutesLesPoules();
+        toast(
+          `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
+          "success",
+        );
+      }
+      /*localStorage.setItem(
           `${config.categorie}-${config.genre}-${config.niveauActuel}`,
           JSON.stringify(poules),
         );*/
-      };
-      reader.readAsText(file);
-    });
-  }
+    };
+    reader.readAsText(file);
+  });
 
   function jitterCoords(lat, lng, index, total) {
     if (total <= 1) return [lat, lng];
@@ -303,13 +308,46 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
   }
 
+  /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
+
+  function afficherErreurs() {
+    const clubsIgnores = JSON.parse(localStorage.getItem('clubs_ignorés') || '[]');
+    const equipesInconnues = window.equipesInconnues || []; // ton tableau produit par traiterCSV
+
+    const panel = document.getElementById('errors-panel');
+    let visible = false;
+
+    // Clubs non géocodés
+    const blockGeo = document.getElementById('block-geocodage');
+    if (clubsIgnores.length > 0) {
+        document.getElementById('count-geocodage').textContent = clubsIgnores.length;
+        const ul = document.getElementById('list-geocodage');
+        ul.innerHTML = clubsIgnores.map(nom => `<li>${nom}</li>`).join('');
+        blockGeo.style.display = 'block';
+        visible = true;
+    }
+
+    // Équipes non placées
+    const blockEq = document.getElementById('block-equipes');
+    if (equipesInconnues.length > 0) {
+        document.getElementById('count-equipes').textContent = equipesInconnues.length;
+        const ul = document.getElementById('list-equipes');
+        ul.innerHTML = equipesInconnues.map(e => `<li>${e.nom}</li>`).join('');
+        blockEq.style.display = 'block';
+        visible = true;
+    }
+
+    panel.style.display = visible ? 'flex' : 'none';
+}
+
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
 
   function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
-      resetMarkers();
+      //resetMarkers();
+      highlightToutesLesPoules();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
@@ -346,9 +384,9 @@ document.addEventListener("DOMContentLoaded", () => {
       );
   }
 
-  function highlightToutesLesPoules(poules) {
+  function highlightToutesLesPoules() {
     const equipeIdToCouleur = new Map();
-    poules.forEach((poule, i) => {
+    poulesActuelles.forEach((poule, i) => {
       const couleur = PALETTE[i % PALETTE.length];
       poule.equipes.forEach((e) => equipeIdToCouleur.set(e.id, couleur));
     });
@@ -396,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (actif) {
       highlightPoule._actif = null;
-      resetMarkers();
+      //resetMarkers();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
@@ -549,6 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selection = null;
           afficherPoules();
+          highlightToutesLesPoules();
           /*localStorage.setItem(
             `${config.categorie}-${config.genre}-${config.niveauActuel}`,
             JSON.stringify(poules),
@@ -623,12 +662,8 @@ document.addEventListener("DOMContentLoaded", () => {
                      data-equipe-id="${e.id}">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
                     <span class="pool-team-name">
-    <span>
-        ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
-        &nbsp;&nbsp;&nbsp;
-        ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
-    </span>
-</span>
+                      ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
+                    </span>
                     <span class="pool-team-club">${e.distance_totale} Km</span>
                 </div>
             `,
@@ -673,7 +708,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Mode normal : listener highlight carte sur les cards uniquement
       document.querySelectorAll(".pool-card").forEach((card, i) => {
-        card.addEventListener("click", () => highlightPoule(i));
+        card.addEventListener("click", () => {
+          highlightPoule(i);
+          window.scrollTo(0, 0);
+        });
       });
     }
   }
@@ -698,6 +736,8 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
   renderStepper();
+  afficherErreurs();
+
   setTimeout(() => map.invalidateSize(), 100);
 
   /* ── RESTAURATION ───────────────────────────────────────────────────────── */
@@ -716,7 +756,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const equipes = poulesActuelles.flatMap((p) => p.equipes);
         afficherCarte(equipes);
-        afficherPoules(poulesActuelles);
+        afficherPoules();
+        highlightToutesLesPoules();
 
         const csvStocke = localStorage.getItem(
           `csv_contenu_niveau${config.niveauActuel}`,

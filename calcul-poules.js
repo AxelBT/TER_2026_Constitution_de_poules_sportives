@@ -1,531 +1,660 @@
 import { toast } from "./toast.js";
 
-
-let config = JSON.parse(localStorage.getItem('championnatConfig'));
+let config = JSON.parse(localStorage.getItem("championnatConfig"));
 const clubs = JSON.parse(localStorage.getItem("clubs"));
 //import { clubs } from './clubs.js'
 console.log(clubs);
 
 if (!config) {
-    window.location.href = 'poule.html'; 
-   // return;
+  window.location.href = "poule.html";
+  // return;
 }
 
-
 function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
-    let num = parseInt(numEquipe);
-    
-    while (data.some(e => 
-        e.id_club === numClub && 
-        e.numero === num && 
-        e.type === (estCTC ? "CTC" : "Club")  // on compare uniquement entre mêmes types
-    )) {
-        num++;
-    }
-    
-    return num;
+  let num = parseInt(numEquipe);
+
+  while (
+    data.some(
+      (e) =>
+        e.id_club === numClub &&
+        e.numero === num &&
+        e.type === (estCTC ? "CTC" : "Club"), // on compare uniquement entre mêmes types
+    )
+  ) {
+    num++;
+  }
+
+  return num;
 }
 
 function verifierCoherenceClub(data, numClub, nomClub) {
-    const existant = data.find(e => e.num_club === numClub);
-    if (!existant) return true; 
-    return existant.nom_club.toLowerCase() === nomClub.toLowerCase();
+  const existant = data.find((e) => e.num_club === numClub);
+  if (!existant) return true;
+  return existant.nom_club.toLowerCase() === nomClub.toLowerCase();
 }
 
 function verifierCoherenceCTC(data, ctcNum, ctcNom) {
-    const existant = data.find(e => 
-        e.type === "CTC" && 
-        e.ctc_num === ctcNum
-    );
-    
-    if (!existant) return true; 
-    
-    return existant.ctc_nom.toLowerCase() === ctcNom.toLowerCase();
+  const existant = data.find((e) => e.type === "CTC" && e.ctc_num === ctcNum);
+
+  if (!existant) return true;
+
+  return existant.ctc_nom.toLowerCase() === ctcNom.toLowerCase();
+}
+
+function verifierCTCClubPorteur(data, ctcNum, numClub) {
+  const existant = data.find((e) => e.type === "CTC" && e.ctc_num === ctcNum);
+
+  if (!existant) return true;
+
+  return existant.num_club === numClub;
+}
+
+function determinerType(typeBrut) {
+    const t = typeBrut.toLowerCase();
+
+    // cas CLUB
+    if (t === "club") {
+        return "Club";
+    }
+
+    // cas CTC (formes acceptées)
+    if (
+        t === "ctc" ||
+        t === "coopération territoriale club" ||
+        t === "cooperation territoriale club"
+    ) {
+        return "CTC";
+    }
+
+    return null; // inconnu
 }
 
 export async function traiterCSV(contenu) {
-    //console.log("Contenu reçu (longueur) :", contenu.length);
-    const lignes = contenu.split("\n");
-    const data = [];
-    const equipesInconnues = [];
+  //console.log("Contenu reçu (longueur) :", contenu.length);
+  const lignes = contenu.split("\n");
+  const data = [];
+  const equipesInconnues = [];
 
-    const mapClubs = {};
-    clubs.forEach(c => { mapClubs[c.id_club] = c; });
+  const mapClubs = {};
+  clubs.forEach((c) => {
+    mapClubs[c.id_club] = c;
+  });
 
-    const headers = lignes[0].split(",").map(h => h.trim().toUpperCase());
+  const headers = lignes[0].split(",").map((h) => h.trim().toUpperCase());
 
-    const idx = {   // n'importe quel ordre 
-        club_nom:   headers.indexOf("CLUB_NOM"),
-        club_num:   headers.indexOf("CLUB_NUMERO"),
-        type:       headers.indexOf("TYPE_EQUIPE"),
-        ctc_nom:    headers.indexOf("CTC_NOM"),
-        ctc_num:    headers.indexOf("CTC_NUMERO"),
-        equipe_num: headers.indexOf("EQUIPE_NUMERO"),
-        niveau:     headers.indexOf("NIVEAU"),
+  const idx = {
+    // n'importe quel ordre
+    club_nom: headers.indexOf("CLUB_NOM"),
+    club_num: headers.indexOf("CLUB_NUMERO"),
+    type: headers.indexOf("TYPE_EQUIPE"),
+    ctc_nom: headers.indexOf("CTC_NOM"),
+    ctc_num: headers.indexOf("CTC_NUMERO"),
+    equipe_num: headers.indexOf("EQUIPE_NUMERO"),
+    niveau: headers.indexOf("NIVEAU"),
+  };
+
+  const colonnesManquantes = Object.entries(idx)
+    .filter(([_, val]) => val === -1)
+    .map(([cle, _]) => cle);
+
+  if (colonnesManquantes.length > 0) {
+    toast(
+      `Colonnes introuvables dans le fichier : ${colonnesManquantes.join(", ")}`,
+      "error",
+    );
+    return { succes: false, tableau: [] };
+  }
+
+  for (let i = 1; i < lignes.length; i++) {
+    if (lignes[i].trim() === "") continue; // ignorer les lignes vides
+
+    const colonnes = lignes[i].split(",");
+    const type = colonnes[idx.type]?.trim();
+    const numClub = colonnes[idx.club_num]?.trim();
+    const nomClub = colonnes[idx.club_nom]?.trim();
+    const niveau = colonnes[idx.niveau]?.trim();
+    const ctcNom = colonnes[idx.ctc_nom]?.trim();
+    const ctcNum = colonnes[idx.ctc_num]?.trim();
+    const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
+
+
+    const verifier_type = determinerType(type);
+    if(!verifier_type){
+        toast(`Type inconnu ligne ${i+1} : "${type}"`, "error");
+    return { succes: false, tableau: [] };
+    }
+    const estCTC = verifier_type  === "CTC";
+
+    // on vérifie si toutes les infos d'une équipe sont fournies
+    let champManquant = !numClub || !nomClub || isNaN(numEquipeRaw) || !type;
+    if (estCTC && (!ctcNom || !ctcNum)) champManquant = true;
+
+    // Exception pour le niveau
+    if (config.mode === "niveau" && !niveau) champManquant = true;
+
+    if (champManquant) {
+      toast(`Données incomplètes :  ligne ${i + 1}`, "error");
+      return { succes: false, tableau: [] };
+    }
+
+    const club = mapClubs[numClub];
+    if (!club) {
+      const nomAffiche = estCTC ? ctcNom || "Inconnue" : nomClub || "Inconnue";
+      equipesInconnues.push({ nom: nomAffiche, id_club: numClub });
+      continue;
+    }
+
+    // vérifier que pour le même numclub on a toujours le même nomclub
+    if (!verifierCoherenceClub(data, numClub, nomClub)) {
+      toast(
+        `Incohérence : le numéro ${numClub} correspond à deux noms de clubs différents.`,
+        "error",
+      );
+      return { succes: false, tableau: [] };
+    }
+
+    if (estCTC) {
+      if (!verifierCoherenceCTC(data, ctcNum, ctcNom)) {
+        toast(
+          `Incohérence : le numéro ${ctcNum} correspond à deux noms de CTC différents.`,
+          "error",
+        );
+        return { succes: false, tableau: [] };
+      }
+      if (!verifierCTCClubPorteur(data, ctcNum, numClub)) {
+        toast(
+          `Incohérence : la CTC ${ctcNum} est associée à plusieurs clubs porteurs.`,
+          "error",
+        );
+        return { succes: false, tableau: [] };
+      }
+    }
+
+    const numEquipe = trouverNumeroEquipeDisponible(
+      data,
+      numClub,
+      numEquipeRaw,
+      estCTC,
+    );
+
+    if (numEquipe !== numEquipeRaw) {
+      toast(
+        `Doublon détecté : club ${numClub}, équipe ${numEquipeRaw} → renommée en ${numEquipe}`,
+        "warn",
+      );
+    }
+
+    const equipe = {
+      id: estCTC ? `${ctcNom}-${numEquipe}` : `${nomClub}-${numEquipe}`,
+      num_club: numClub,
+      nom_club: nomClub,
+      numero: numEquipe,
+      type: estCTC ? "CTC" : "Club",
+      niveau: niveau,
+      latitude: parseFloat(club.latitude),
+      longitude: parseFloat(club.longitude),
     };
 
-    const colonnesManquantes = Object.entries(idx).filter(([_, val]) => val === -1).map(([cle, _]) => cle);
-
-    if (colonnesManquantes.length > 0) {
-        toast(`Colonnes introuvables dans le fichier : ${colonnesManquantes.join(", ")}`, "error");
-        return { succes: false, tableau: [] };
+    if (estCTC) {
+      equipe.ctc_nom = ctcNom;
+      equipe.ctc_num = ctcNum;
     }
 
-    for (let i = 1; i < lignes.length; i++) {
-        if (lignes[i].trim() === "") continue; // ignorer les lignes vides 
+    data.push(equipe);
+  }
 
-        const colonnes  = lignes[i].split(",");
-        const type      = colonnes[idx.type]?.trim();
-        const estCTC    = !(type.toLowerCase() === "club"); // si c'est pas un club c'est une ctc (à modifier)
-        const numClub   = colonnes[idx.club_num]?.trim();
-        const nomClub   = colonnes[idx.club_nom]?.trim();
-        const niveau    = colonnes[idx.niveau]?.trim();
-        const ctcNom    = colonnes[idx.ctc_nom]?.trim();
-        const ctcNum    = colonnes[idx.ctc_num]?.trim();
-        const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
+  if (equipesInconnues.length > 0) {
+    toast("Impossible de générer", "error");
+    return { succes: false, tableau: equipesInconnues };
+  }
 
-        // on vérifie si toutes les infos d'une équipe sont fournies 
-        let champManquant = !numClub || !nomClub || isNaN(numEquipeRaw) || !type;
-        if (estCTC && (!ctcNom || !ctcNum)) champManquant = true;
-        
-        // Exception pour le niveau
-        if (config.mode === "niveau" && !niveau) champManquant = true;
-
-        if (champManquant) {
-            toast(`Données incomplètes :  ligne ${i+1}`,"error");
-            return { succes: false, tableau: [] };;
-        }
-
-        const club = mapClubs[numClub];
-        if (!club) {
-            const nomAffiche = estCTC ? (ctcNom || "Inconnue") : (nomClub || "Inconnue");
-            equipesInconnues.push({ nom: nomAffiche, id_club: numClub });
-            continue;
-        }
-
-        // vérifier que pour le même numclub on a toujours le même nomclub
-        if (!verifierCoherenceClub(data, numClub, nomClub)) {
-            toast(
-                `Incohérence : le numéro ${numClub} correspond à deux noms de clubs différents.`,
-                "error"
-            );
-            return { succes: false, tableau: [] };
-        }
-
-        if (estCTC){
-            if (!verifierCoherenceCTC(data, ctcNum, ctcNom)) {
-                toast(
-                    `Incohérence : le numéro ${numClub} correspond à deux noms de CTC différents.`,
-                    "error"
-                );
-                return { succes: false, tableau: [] };
-            }
-        }
-
-        const numEquipe = trouverNumeroEquipeDisponible(data, numClub, numEquipeRaw,estCTC);
-
-        if (numEquipe !== numEquipeRaw) {
-            toast(
-                `Doublon détecté : club ${numClub}, équipe ${numEquipeRaw} → renommée en ${numEquipe}`,
-                "warn"
-            );
-        }
-
-        const equipe = {
-            id: estCTC ? `${ctcNom}-${numEquipe}` : `${nomClub}-${numEquipe}`,
-            num_club:   numClub,
-            nom_club:  nomClub,
-            numero:    numEquipe,
-            type:      estCTC ? "CTC"   : "Club",
-            niveau:    niveau,
-            latitude:  parseFloat(club.latitude),
-            longitude: parseFloat(club.longitude),
-        };
-
-        if (estCTC) {
-            equipe.ctc_nom = ctcNom;
-            equipe.ctc_num = ctcNum;
-        }
-
-        data.push(equipe);
-    }
-
-    if (equipesInconnues.length > 0) {
-        toast("Impossible de générer", "error");
-        return { succes: false, tableau: equipesInconnues };
-    }
-
-    return { succes: true, tableau: data };
+  return { succes: true, tableau: data };
 }
 
 // Distance Haversine entre deux équipes (en km)
 export function distance(e1, e2) {
-    const R = 6371;
-    const dLat = (e2.latitude - e1.latitude) * Math.PI/180;
-    const dLon = (e2.longitude - e1.longitude) * Math.PI/180;
+  const R = 6371;
+  const dLat = ((e2.latitude - e1.latitude) * Math.PI) / 180;
+  const dLon = ((e2.longitude - e1.longitude) * Math.PI) / 180;
 
-    const a =
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(e1.latitude * Math.PI/180) *
-        Math.cos(e2.latitude * Math.PI/180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((e1.latitude * Math.PI) / 180) *
+      Math.cos((e2.latitude * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // Barycentre géographique d'un tableau d'équipes
 export function calculerBarycentre(equipes) {
-    if (equipes.length === 0) return null;
+  if (equipes.length === 0) return null;
 
-    const total = equipes.reduce((acc, e) => {
-        acc.lat += e.latitude;
-        acc.lon += e.longitude;
-        return acc;
-    }, { lat: 0, lon: 0 });
+  const total = equipes.reduce(
+    (acc, e) => {
+      acc.lat += e.latitude;
+      acc.lon += e.longitude;
+      return acc;
+    },
+    { lat: 0, lon: 0 },
+  );
 
-    return {
-        latitude: total.lat / equipes.length,
-        longitude: total.lon / equipes.length
-    };
+  return {
+    latitude: total.lat / equipes.length,
+    longitude: total.lon / equipes.length,
+  };
 }
 
 function definirCapacitesPoules(nb_poules, total_equipes) {
-    const base  = Math.floor(total_equipes / nb_poules);
-    const reste = total_equipes % nb_poules;
+  const base = Math.floor(total_equipes / nb_poules);
+  const reste = total_equipes % nb_poules;
 
-    let capacites = [
-        ...Array(reste).fill(base + 1),
-        ...Array(nb_poules - reste).fill(base)
-    ];
+  let capacites = [
+    ...Array(reste).fill(base + 1),
+    ...Array(nb_poules - reste).fill(base),
+  ];
 
-    // Mélange aléatoire (Fisher-Yates)
-    for (let i = capacites.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [capacites[i], capacites[j]] = [capacites[j], capacites[i]];
-    }
+  // Mélange aléatoire (Fisher-Yates)
+  for (let i = capacites.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [capacites[i], capacites[j]] = [capacites[j], capacites[i]];
+  }
 
-    return capacites;
+  return capacites;
 }
 
 function initialiserPoules(nb_poules, niveau, capacites) {
-    const lettres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lettres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    return Array.from({ length: nb_poules }, (_, i) => ({
-        nom: lettres[i],
-        niveau: niveau,
-        nb_max: capacites[i],
-        equipes: [],
-        distance_moyenne: 0,
-        barycentre: null
-    }));
+  return Array.from({ length: nb_poules }, (_, i) => ({
+    nom: lettres[i],
+    niveau: niveau,
+    nb_max: capacites[i],
+    equipes: [],
+    distance_moyenne: 0,
+    barycentre: null,
+  }));
 }
 
 function trierParIsolement(equipes, centreGlobal) {
-    return [...equipes].sort((a, b) => {
-        const distA = distance(a, centreGlobal);
-        const distB = distance(b, centreGlobal);
-        return distB - distA; 
-    });
+  return [...equipes].sort((a, b) => {
+    const distA = distance(a, centreGlobal);
+    const distB = distance(b, centreGlobal);
+    return distB - distA;
+  });
 }
 
-function choisirGrainesOptimisees(equipes, nb_poules, poules,barycentreGlobal) {
-    const nonGraines = [...equipes]; // on travaille sur une copie
- 
-    let indexMax = 0;
-    let distMax  = -1;
- 
+function choisirGrainesOptimisees(
+  equipes,
+  nb_poules,
+  poules,
+  barycentreGlobal,
+) {
+  const nonGraines = [...equipes]; // on travaille sur une copie
+
+  let indexMax = 0;
+  let distMax = -1;
+
+  for (let i = 0; i < nonGraines.length; i++) {
+    const d = distance(nonGraines[i], barycentreGlobal);
+    if (d > distMax) {
+      distMax = d;
+      indexMax = i;
+    }
+  }
+
+  ajouterEquipeDansPoule(poules[0], nonGraines[indexMax]);
+  nonGraines.splice(indexMax, 1);
+
+  for (let g = 1; g < nb_poules; g++) {
+    const graines = poules.slice(0, g).map((p) => p.equipes[0]); // graines déjà placées
+
+    let meilleurIndex = 0;
+    let meilleurScore = -1; // on cherche le MAX
+
     for (let i = 0; i < nonGraines.length; i++) {
-        const d = distance(nonGraines[i], barycentreGlobal);
-        if (d > distMax) { distMax = d; indexMax = i; }
+      const minDist = Math.min(
+        ...graines.map((gr) => distance(nonGraines[i], gr)),
+      );
+
+      if (minDist > meilleurScore) {
+        meilleurScore = minDist;
+        meilleurIndex = i;
+      }
     }
- 
-    
-    ajouterEquipeDansPoule(poules[0], nonGraines[indexMax]);
-    nonGraines.splice(indexMax, 1);
- 
-    for (let g = 1; g < nb_poules; g++) {
-        const graines = poules.slice(0, g).map(p => p.equipes[0]); // graines déjà placées
- 
-        let meilleurIndex = 0;
-        let meilleurScore = -1; // on cherche le MAX
- 
-        for (let i = 0; i < nonGraines.length; i++) {
-            const minDist = Math.min(...graines.map(gr => distance(nonGraines[i], gr)));
- 
-            if (minDist > meilleurScore) {
-                meilleurScore = minDist;
-                meilleurIndex = i;
-            }
-        }
-        
-        ajouterEquipeDansPoule(poules[g], nonGraines[meilleurIndex]);
-        nonGraines.splice(meilleurIndex, 1);
-    }
- 
-    return nonGraines;
+
+    ajouterEquipeDansPoule(poules[g], nonGraines[meilleurIndex]);
+    nonGraines.splice(meilleurIndex, 1);
+  }
+
+  return nonGraines;
 }
 
 export function verifierClubDansPoule(poule, equipe) {
-    return poule.equipes.some(e => e.num_club === equipe.num_club);
+  return poule.equipes.some((e) => e.num_club === equipe.num_club);
 }
 
 function choisirMeilleurePoule(poules, equipe) {
-    let meilleure    = null;
-    let minDist      = Infinity;
- 
-    for (const p of poules) {
-        
-        if (p.equipes.length >= p.nb_max) continue;
- 
-        
-        if (verifierClubDansPoule(p, equipe)) continue;
- 
-        
-        const bary = p.barycentre;
-        if (!bary) continue; // ne devrait pas arriver (graine toujours présente)
- 
-        const d = distance(equipe, bary);
-        if (d < minDist) {
-            minDist   = d;
-            meilleure = p;
-        }
+  let meilleure = null;
+  let minDist = Infinity;
+
+  for (const p of poules) {
+    if (p.equipes.length >= p.nb_max) continue;
+
+    if (verifierClubDansPoule(p, equipe)) continue;
+
+    const bary = p.barycentre;
+    if (!bary) continue; // ne devrait pas arriver (graine toujours présente)
+
+    const d = distance(equipe, bary);
+    if (d < minDist) {
+      minDist = d;
+      meilleure = p;
     }
- 
-    return meilleure;
+  }
+
+  return meilleure;
 }
 
-
 export function ajouterEquipeDansPoule(poule, equipe) {
-    poule.equipes.push(equipe);
-    poule.barycentre = calculerBarycentre(poule.equipes);
-    poule.distance_moyenne = calculerDistanceMoyenne(poule);
+  poule.equipes.push(equipe);
+  poule.barycentre = calculerBarycentre(poule.equipes);
+  poule.distance_moyenne = calculerDistanceMoyenne(poule);
 }
 
 function tenterSauvetage(poules, equipe) {
-    let meilleurEchange = null;
-    let meilleurScore   = Infinity;
+  let meilleurEchange = null;
+  let meilleurScore = Infinity;
 
-    for (const p of poules) {
-        if (verifierClubDansPoule(p, equipe)) continue;
+  for (const p of poules) {
+    if (verifierClubDansPoule(p, equipe)) continue;
 
-        for (let i = 0; i < p.equipes.length; i++) {
-            const equipeEchange = p.equipes[i];
+    for (let i = 0; i < p.equipes.length; i++) {
+      const equipeEchange = p.equipes[i];
 
-            const equipesDansP_apresRetrait = p.equipes.filter((_, idx) => idx !== i);
-            const nouveauBaryP = calculerBarycentre(equipesDansP_apresRetrait);
-            const scoreP = nouveauBaryP ? distance(equipe, nouveauBaryP) : 0;
+      const equipesDansP_apresRetrait = p.equipes.filter((_, idx) => idx !== i);
+      const nouveauBaryP = calculerBarycentre(equipesDansP_apresRetrait);
+      const scoreP = nouveauBaryP ? distance(equipe, nouveauBaryP) : 0;
 
-            for (const pCible of poules) {
-                if (
-                    pCible !== p &&
-                    pCible.equipes.length < pCible.nb_max &&
-                    !verifierClubDansPoule(pCible, equipeEchange)
-                ) {
-                    const scorePCible = pCible.barycentre
-                        ? distance(equipeEchange, pCible.barycentre)
-                        : 0;
+      for (const pCible of poules) {
+        if (
+          pCible !== p &&
+          pCible.equipes.length < pCible.nb_max &&
+          !verifierClubDansPoule(pCible, equipeEchange)
+        ) {
+          const scorePCible = pCible.barycentre
+            ? distance(equipeEchange, pCible.barycentre)
+            : 0;
 
-                    const score = scoreP + scorePCible;
+          const score = scoreP + scorePCible;
 
-                    if (score < meilleurScore) {
-                        meilleurScore   = score;
-                        meilleurEchange = { p, i, equipeEchange, pCible };
-                    }
-                }
-            }
+          if (score < meilleurScore) {
+            meilleurScore = score;
+            meilleurEchange = { p, i, equipeEchange, pCible };
+          }
         }
+      }
+    }
+  }
+
+  if (!meilleurEchange) return false;
+
+  const { p, i, equipeEchange, pCible } = meilleurEchange;
+
+  p.equipes.splice(i, 1);
+  p.barycentre = calculerBarycentre(p.equipes);
+  //p.distance_moyenne = calculerDistanceMoyenne(p);
+
+  ajouterEquipeDansPoule(pCible, equipeEchange);
+  ajouterEquipeDansPoule(p, equipe);
+
+  return true;
+}
+
+export function verifierSaturationClub(equipes, nb_poules) {
+  const count = {};
+
+  equipes.forEach((e) => {
+    count[e.num_club] = (count[e.num_club] || 0) + 1;
+  });
+
+  const max = Math.max(...Object.values(count));
+  return max <= nb_poules;
+}
+
+/*function equilibrerDistancesMoyennes(poules) {
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+
+    let meilleurEchange = null;
+    let meilleurEcartGlobal = calculerEcartGlobal(poules);
+
+    //  parcourir toutes les paires de poules
+    for (let a = 0; a < poules.length; a++) {
+      for (let b = a + 1; b < poules.length; b++) {
+        const pA = poules[a];
+        const pB = poules[b];
+
+        for (let i = 0; i < pA.equipes.length; i++) {
+          for (let j = 0; j < pB.equipes.length; j++) {
+            const eA = pA.equipes[i];
+            const eB = pB.equipes[j];
+
+            const pASans = pA.equipes.filter((_, idx) => idx !== i);
+            const pBSans = pB.equipes.filter((_, idx) => idx !== j);
+
+            // contrainte club
+            if (pASans.some(e => e.num_club === eB.num_club)) continue;
+            if (pBSans.some(e => e.num_club === eA.num_club)) continue;
+
+            // simulation
+            const nouvelleDistA = calculerDistanceMoyenne({
+              equipes: [...pASans, eB],
+            });
+
+            const nouvelleDistB = calculerDistanceMoyenne({
+              equipes: [...pBSans, eA],
+            });
+
+            // recalcul global
+            const distancesSimulees = poules.map((p, idx) => {
+              if (idx === a) return nouvelleDistA;
+              if (idx === b) return nouvelleDistB;
+              return p.distance_moyenne;
+            });
+
+            const nouvelEcart =
+              Math.max(...distancesSimulees) -
+              Math.min(...distancesSimulees);
+
+            if (nouvelEcart < meilleurEcartGlobal) {
+              meilleurEcartGlobal = nouvelEcart;
+              meilleurEchange = { a, b, i, j, eA, eB };
+            }
+          }
+        }
+      }
     }
 
-    if (!meilleurEchange) return false;
+    //  aucun échange améliore → on arrête
+    if (!meilleurEchange) break;
 
-    const { p, i, equipeEchange, pCible } = meilleurEchange;
+    // appliquer le meilleur échange global
+    const { a, b, i, j, eA, eB } = meilleurEchange;
 
-    p.equipes.splice(i, 1);
-    p.barycentre       = calculerBarycentre(p.equipes);
-    //p.distance_moyenne = calculerDistanceMoyenne(p);
+    poules[a].equipes.splice(i, 1);
+    poules[b].equipes.splice(j, 1);
 
-    ajouterEquipeDansPoule(pCible, equipeEchange);
-    ajouterEquipeDansPoule(p, equipe);
+    ajouterEquipeDansPoule(poules[a], eB);
+    ajouterEquipeDansPoule(poules[b], eA);
+  }
 
-    return true;
+  console.log(`Équilibrage terminé en ${iterations} itération(s)`);
+  return poules;
 }
 
-function verifierSaturationClub(equipes, nb_poules) {
-    const count = {};
+function calculerEcartGlobal(poules) {
+  const distances = poules.map(p => p.distance_moyenne);
+  return Math.max(...distances) - Math.min(...distances);
+}*/
 
-    equipes.forEach(e => {
-        count[e.num_club] = (count[e.num_club] || 0) + 1;
-    });
-
-    const max = Math.max(...Object.values(count));
-    return max <= nb_poules;
-}
 
 function equilibrerDistancesMoyennes(poules) {
-    let changement = true;
-    let iterations = 0;
-    const MAX_ITERATIONS = 100;
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
 
-    while (changement && iterations < MAX_ITERATIONS) {
-        changement = false;
-        iterations++;
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
 
-        // Identifie la poule la plus chère et la moins chère
-        const pMax = poules.reduce((a, b) => a.distance_moyenne > b.distance_moyenne ? a : b);
-        const pMin = poules.reduce((a, b) => a.distance_moyenne < b.distance_moyenne ? a : b);
+    let meilleurEchange = null;
+    let meilleurGain = 0;
 
-        // Si l'écart est déjà faible, inutile de continuer
-        if (pMax.distance_moyenne - pMin.distance_moyenne < 10) break;
+    for (let a = 0; a < poules.length; a++) {
+      for (let b = a + 1; b < poules.length; b++) {
+        const pA = poules[a];
+        const pB = poules[b];
 
-        let meilleurEchange = null;
-        let meilleurEcart   = pMax.distance_moyenne - pMin.distance_moyenne;
+        for (let i = 0; i < pA.equipes.length; i++) {
+          for (let j = 0; j < pB.equipes.length; j++) {
+            const eA = pA.equipes[i];
+            const eB = pB.equipes[j];
 
-        // On cherche le meilleur échange entre pMax et pMin UNIQUEMENT
-        for (let i = 0; i < pMax.equipes.length; i++) {
-            for (let j = 0; j < pMin.equipes.length; j++) {
-                const eMax = pMax.equipes[i];
-                const eMin = pMin.equipes[j];
+            const pASans = pA.equipes.filter((_, idx) => idx !== i);
+            const pBSans = pB.equipes.filter((_, idx) => idx !== j);
 
-                const pMaxSansEMax = pMax.equipes.filter((_, idx) => idx !== i);
-                const pMinSansEMin = pMin.equipes.filter((_, idx) => idx !== j);
+            // contrainte club
+            if (pASans.some(e => e.num_club === eB.num_club)) continue;
+            if (pBSans.some(e => e.num_club === eA.num_club)) continue;
 
-                if (pMaxSansEMax.some(e => e.num_club === eMin.num_club)) continue;
-                if (pMinSansEMin.some(e => e.num_club === eMax.num_club)) continue;
+            const ancienneDistA = pA.distance_moyenne;
+            const ancienneDistB = pB.distance_moyenne;
 
-                // Simule l'échange
-                const nouvelleDistMax = calculerDistanceMoyenne({ equipes: [...pMaxSansEMax, eMin] });
-                const nouvelleDistMin = calculerDistanceMoyenne({ equipes: [...pMinSansEMin, eMax] });
+            const nouvelleDistA = calculerDistanceMoyenne({
+              equipes: [...pASans, eB],
+            });
 
-                // Nouvel écart global après cet échange
-                const distancesSimulees = poules.map(p => {
-                    if (p === pMax) return nouvelleDistMax;
-                    if (p === pMin) return nouvelleDistMin;
-                    return p.distance_moyenne;
-                });
-                const nouvelEcart = Math.max(...distancesSimulees) - Math.min(...distancesSimulees);
+            const nouvelleDistB = calculerDistanceMoyenne({
+              equipes: [...pBSans, eA],
+            });
 
-                if (nouvelEcart < meilleurEcart) {
-                    meilleurEcart   = nouvelEcart;
-                    meilleurEchange = { i, j, eMax, eMin };
-                }
+            //  gain global (ce que TU veux)
+            const gain =
+              (ancienneDistA + ancienneDistB) -
+              (nouvelleDistA + nouvelleDistB);
+
+            if (gain > meilleurGain) {
+              meilleurGain = gain;
+              meilleurEchange = { a, b, i, j, eA, eB };
             }
+          }
         }
-
-        if (meilleurEchange) {
-            const { i, j, eMax, eMin } = meilleurEchange;
-
-            pMax.equipes.splice(i, 1);
-            pMin.equipes.splice(j, 1);
-
-            //pMax.barycentre       = calculerBarycentre(pMax.equipes);
-            //pMax.distance_moyenne = calculerDistanceMoyenne(pMax);
-            //pMin.barycentre       = calculerBarycentre(pMin.equipes);
-            //pMin.distance_moyenne = calculerDistanceMoyenne(pMin);
-
-            ajouterEquipeDansPoule(pMax, eMin);
-            ajouterEquipeDansPoule(pMin, eMax);
-
-            changement = true;
-        }
-        // Si aucun échange entre pMax et pMin n'améliore → on arrête
-        // (l'écart actuel est le minimum atteignable sous contrainte club)
+      }
     }
 
-    console.log(`Équilibrage terminé en ${iterations} itération(s)`);
-    return poules;
+    // aucun échange n'améliore → stop
+    if (!meilleurEchange) break;
+
+    // appliquer le meilleur échange
+    const { a, b, i, j, eA, eB } = meilleurEchange;
+
+    poules[a].equipes.splice(i, 1);
+    poules[b].equipes.splice(j, 1);
+
+    ajouterEquipeDansPoule(poules[a], eB);
+    ajouterEquipeDansPoule(poules[b], eA);
+  }
+
+  console.log(`Optimisation terminée en ${iterations} itérations`);
+  return poules;
 }
 
 export function calculerDistanceMoyenne(poule) {
-    if (poule.equipes.length <= 1) return 0;
+  if (poule.equipes.length <= 1) return 0;
 
-    let total = 0;
-    let count = 0;
+  let total = 0;
+  let count = 0;
 
-    for (let i = 0; i < poule.equipes.length; i++) {
-        for (let j = i + 1; j < poule.equipes.length; j++) {
-            total += distance(poule.equipes[i], poule.equipes[j]);
-            count++;
-        }
+  for (let i = 0; i < poule.equipes.length; i++) {
+    for (let j = i + 1; j < poule.equipes.length; j++) {
+      total += distance(poule.equipes[i], poule.equipes[j]);
+      count++;
     }
+  }
 
-    return total / count;
+  return total / count;
 }
 
 export function finaliserStatistiquesPoules(poules) {
-    poules.forEach(poule => {
-        const n = poule.equipes.length;
-        const distancesAuCentre = poule.equipes.map(e => distance(e, poule.barycentre));
-        const moyDistCentre = distancesAuCentre.reduce((s, d) => s + d, 0) / (n || 1);
-        const variance = distancesAuCentre.reduce((s, d) => s + Math.pow(d - moyDistCentre, 2), 0) / (n || 1);
-        poule.ecart_type = Math.sqrt(variance);
-        poule.equipes.forEach(e => e.distance_totale = 0);
-        for (let i = 0; i < n; i++) {
-            for (let j = i + 1; j < n; j++) {
-                const d = distance(poule.equipes[i], poule.equipes[j]);
-                
-                poule.equipes[i].distance_totale += d;
-                poule.equipes[j].distance_totale += d;
+  poules.forEach((poule) => {
+    const n = poule.equipes.length;
+    const distancesAuCentre = poule.equipes.map((e) =>
+      distance(e, poule.barycentre),
+    );
+    const moyDistCentre =
+      distancesAuCentre.reduce((s, d) => s + d, 0) / (n || 1);
+    const variance =
+      distancesAuCentre.reduce(
+        (s, d) => s + Math.pow(d - moyDistCentre, 2),
+        0,
+      ) / (n || 1);
+    poule.ecart_type = Math.sqrt(variance);
+    poule.equipes.forEach((e) => (e.distance_totale = 0));
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const d = distance(poule.equipes[i], poule.equipes[j]);
 
-            }
-        }
-        
-        poule.equipes.forEach(e => {
-            e.distance_totale = e.distance_totale.toFixed(2);
-        });
+        poule.equipes[i].distance_totale += d;
+        poule.equipes[j].distance_totale += d;
+      }
+    }
+
+    poule.equipes.forEach((e) => {
+      e.distance_totale = e.distance_totale.toFixed(2);
     });
+  });
 }
 
 export function generer_poules(equipes, nb_poules, nb_max) {
-    const nb_equipes = equipes.length;
- 
-    if (nb_poules * nb_max < nb_equipes) {
-        toast("Capacité insuffisante : augmente le nombre de poules ou la taille max.", "error");
-        return;
-    }
-    
-    // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules 
-    if (nb_equipes <= nb_poules * (nb_max - 1)) {
-        toast("Trop peu d'équipes : réduis le nombre de poules ou la taille max.", "error");
-        return;
-    }
-    
-    if (!verifierSaturationClub(equipes, nb_poules)) {
-        toast("Trop d\'équipes d\'un même club pour le nombre de poules.", "error");
-        return;
-    }
-    // on ne peut pas avoir des exempts dans des poules de deux 
-    if(nb_max === 2 && nb_equipes != (nb_max*nb_poules)){
-        toast("Pas d\'exempts dans des poules de 2.", "error");
-        return;
-    }
- 
-    const barycentre = calculerBarycentre(equipes);
-    const capacites = definirCapacitesPoules(nb_poules, nb_equipes);
-    const poules    = initialiserPoules(nb_poules, config.niveauActuel, capacites);
- 
-    let restantes = choisirGrainesOptimisees(equipes, nb_poules, poules,barycentre);
-    restantes = trierParIsolement(restantes,barycentre);
+  const nb_equipes = equipes.length;
 
-    for (const equipe of restantes) {
-        const meilleure = choisirMeilleurePoule(poules, equipe);
- 
-        if (meilleure) {
-            ajouterEquipeDansPoule(meilleure, equipe);
-        } else {
-            console.warn("Sauvetage nécessaire pour :", equipe.nom);
-            const succes = tenterSauvetage(poules, equipe);
- 
-            if (!succes) {
-                toast(`Échec critique : "${equipe.nom}" ne peut pas être placée.`, "error");
-            }
-        }
+  const barycentre = calculerBarycentre(equipes);
+  const capacites = definirCapacitesPoules(nb_poules, nb_equipes);
+  const poules = initialiserPoules(nb_poules, config.niveauActuel, capacites);
+
+  let restantes = choisirGrainesOptimisees(
+    equipes,
+    nb_poules,
+    poules,
+    barycentre,
+  );
+  restantes = trierParIsolement(restantes, barycentre);
+
+  for (const equipe of restantes) {
+    const meilleure = choisirMeilleurePoule(poules, equipe);
+
+    if (meilleure) {
+      ajouterEquipeDansPoule(meilleure, equipe);
+    } else {
+      console.warn("Sauvetage nécessaire pour :", equipe.nom);
+      const succes = tenterSauvetage(poules, equipe);
+
+      if (!succes) {
+        toast(
+          `Échec critique : "${equipe.nom}" ne peut pas être placée.`,
+          "error",
+        );
+      }
     }
-    equilibrerDistancesMoyennes(poules);
-    finaliserStatistiquesPoules(poules);
-    console.log("Poules générées :", poules);
-    return poules;
+  }
+  equilibrerDistancesMoyennes(poules);
+  finaliserStatistiquesPoules(poules);
+  console.log("Poules générées :", poules);
+  return poules;
 }
-
 
 /*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");
@@ -1064,3 +1193,153 @@ function equilibrerDistancesMoyennes(poules) {
     });
 }*/
 
+/*function equilibrerDistancesMoyennes(poules) {
+  let changement = true;
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+
+  while (changement && iterations < MAX_ITERATIONS) {
+    changement = false;
+    iterations++;
+
+    // Identifie la poule la plus chère et la moins chère
+    const pMax = poules.reduce((a, b) =>
+      a.distance_moyenne > b.distance_moyenne ? a : b,
+    );
+    const pMin = poules.reduce((a, b) =>
+      a.distance_moyenne < b.distance_moyenne ? a : b,
+    );
+
+    // Si l'écart est déjà faible, inutile de continuer
+    if (pMax.distance_moyenne - pMin.distance_moyenne < 10) break;
+
+    let meilleurEchange = null;
+    let meilleurEcart = pMax.distance_moyenne - pMin.distance_moyenne;
+
+    // On cherche le meilleur échange entre pMax et pMin UNIQUEMENT
+    for (let i = 0; i < pMax.equipes.length; i++) {
+      for (let j = 0; j < pMin.equipes.length; j++) {
+        const eMax = pMax.equipes[i];
+        const eMin = pMin.equipes[j];
+
+        const pMaxSansEMax = pMax.equipes.filter((_, idx) => idx !== i);
+        const pMinSansEMin = pMin.equipes.filter((_, idx) => idx !== j);
+
+        if (pMaxSansEMax.some((e) => e.num_club === eMin.num_club)) continue;
+        if (pMinSansEMin.some((e) => e.num_club === eMax.num_club)) continue;
+
+        // Simule l'échange
+        const nouvelleDistMax = calculerDistanceMoyenne({
+          equipes: [...pMaxSansEMax, eMin],
+        });
+        const nouvelleDistMin = calculerDistanceMoyenne({
+          equipes: [...pMinSansEMin, eMax],
+        });
+
+        // Nouvel écart global après cet échange
+        const distancesSimulees = poules.map((p) => {
+          if (p === pMax) return nouvelleDistMax;
+          if (p === pMin) return nouvelleDistMin;
+          return p.distance_moyenne;
+        });
+        const nouvelEcart =
+          Math.max(...distancesSimulees) - Math.min(...distancesSimulees);
+
+        if (nouvelEcart < meilleurEcart) {
+          meilleurEcart = nouvelEcart;
+          meilleurEchange = { i, j, eMax, eMin };
+        }
+      }
+    }
+
+    if (meilleurEchange) {
+      const { i, j, eMax, eMin } = meilleurEchange;
+
+      pMax.equipes.splice(i, 1);
+      pMin.equipes.splice(j, 1);
+
+      //pMax.barycentre       = calculerBarycentre(pMax.equipes);
+      //pMax.distance_moyenne = calculerDistanceMoyenne(pMax);
+      //pMin.barycentre       = calculerBarycentre(pMin.equipes);
+      //pMin.distance_moyenne = calculerDistanceMoyenne(pMin);
+
+      ajouterEquipeDansPoule(pMax, eMin);
+      ajouterEquipeDansPoule(pMin, eMax);
+
+      changement = true;
+    }
+    // Si aucun échange entre pMax et pMin n'améliore → on arrête
+    // (l'écart actuel est le minimum atteignable sous contrainte club)
+  }
+
+  console.log(`Équilibrage terminé en ${iterations} itération(s)`);
+  return poules;
+}*/
+
+
+/*function equilibrerDistancesMoyennes(poules) {
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+
+    let meilleurEchange = null;
+
+    // parcourir toutes les paires de poules
+    for (let a = 0; a < poules.length; a++) {
+      for (let b = a + 1; b < poules.length; b++) {
+        const pA = poules[a];
+        const pB = poules[b];
+
+        let ecart = Math.abs(pA.distance_moyenne - pB.distance_moyenne);
+
+        for (let i = 0; i < pA.equipes.length; i++) {
+          for (let j = 0; j < pB.equipes.length; j++) {
+            const eA = pA.equipes[i];
+            const eB = pB.equipes[j];
+
+            const pASans = pA.equipes.filter((_, idx) => idx !== i);
+            const pBSans = pB.equipes.filter((_, idx) => idx !== j);
+
+            // contrainte club
+            if (pASans.some(e => e.num_club === eB.num_club)) continue;
+            if (pBSans.some(e => e.num_club === eA.num_club)) continue;
+
+            // simulation
+            const nouvelleDistA = calculerDistanceMoyenne({
+              equipes: [...pASans, eB],
+            });
+
+            const nouvelleDistB = calculerDistanceMoyenne({
+              equipes: [...pBSans, eA],
+            });
+
+
+            const nouvelEcart = Math.abs(nouvelleDistA - nouvelleDistB);
+
+            if (nouvelEcart < ecart) {
+              ecart = nouvelEcart;
+              meilleurEchange = { a, b, i, j, eA, eB };
+            }
+          }
+        }
+      }
+    }
+
+    // ❌ aucun échange améliore → on arrête
+    if (!meilleurEchange) break;
+
+    // ✅ appliquer le meilleur échange global
+    const { a, b, i, j, eA, eB } = meilleurEchange;
+
+    poules[a].equipes.splice(i, 1);
+    poules[b].equipes.splice(j, 1);
+
+    ajouterEquipeDansPoule(poules[a], eB);
+    ajouterEquipeDansPoule(poules[b], eA);
+  }
+
+  console.log(`Équilibrage terminé en ${iterations} itération(s)`);
+  return poules;
+}*/
