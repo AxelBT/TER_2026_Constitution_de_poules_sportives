@@ -1276,7 +1276,6 @@ function equilibrerDistancesMoyennes(poules) {
   return poules;
 }*/
 
-
 /*function equilibrerDistancesMoyennes(poules) {
   let iterations = 0;
   const MAX_ITERATIONS = 100;
