@@ -220,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (poulesActuelles) {
           afficherPoules();
           highlightToutesLesPoules();
+          afficherErreurs();
           toast(
             `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
             "success",
@@ -283,6 +284,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
   }
+
+  /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
+
+  function afficherErreurs() {
+    const clubsIgnores = JSON.parse(localStorage.getItem('clubs_ignorés') || '[]');
+    const equipesInconnues = window.equipesInconnues || []; // ton tableau produit par traiterCSV
+
+    const panel = document.getElementById('errors-panel');
+    let visible = false;
+
+    // Clubs non géocodés
+    const blockGeo = document.getElementById('block-geocodage');
+    if (clubsIgnores.length > 0) {
+        document.getElementById('count-geocodage').textContent = clubsIgnores.length;
+        const ul = document.getElementById('list-geocodage');
+        ul.innerHTML = clubsIgnores.map(nom => `<li>${nom}</li>`).join('');
+        blockGeo.style.display = 'block';
+        visible = true;
+    }
+
+    // Équipes non placées
+    const blockEq = document.getElementById('block-equipes');
+    if (equipesInconnues.length > 0) {
+        document.getElementById('count-equipes').textContent = equipesInconnues.length;
+        const ul = document.getElementById('list-equipes');
+        ul.innerHTML = equipesInconnues.map(e => `<li>${e.nom}</li>`).join('');
+        blockEq.style.display = 'block';
+        visible = true;
+    }
+
+    panel.style.display = visible ? 'flex' : 'none';
+}
 
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
@@ -694,6 +727,8 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
   renderStepper();
+  afficherErreurs();
+
   setTimeout(() => map.invalidateSize(), 100);
 
   /* ── RESTAURATION ───────────────────────────────────────────────────────── */

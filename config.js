@@ -105,7 +105,7 @@ async function traiter_csv_clubs(contenu) {
             .join(" ");
             
         const rechercheApi = rueEtComplement || commune;
-        
+        document.getElementById('loader').style.display = 'flex';
         try {
             const coords = await geocoderAdresse(rechercheApi, codePostal);
             
@@ -125,12 +125,14 @@ async function traiter_csv_clubs(contenu) {
                 console.warn(`✗ ${nom} non géocodé`);
             }
         } catch (error) {
+            document.getElementById('loader').style.display = 'none';
             console.error(`Erreur géocodage pour ${nom}:`, error);
             ignores.push(nom || `ligne ${i + 1}`);
         }
         
         await new Promise(resolve => setTimeout(resolve, 200));
     }
+    document.getElementById('loader').style.display = 'none';
 
     console.log(`Résultat: ${data.length} clubs géocodés, ${ignores.length} ignorés`);
 
