@@ -428,6 +428,21 @@ body {
     white-space: nowrap;
 }
 
+.pool-team-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.pool-team-row:hover .pool-team-name {
+    overflow: visible;
+    white-space: normal;
+    /*background: white;*/
+    position: relative;
+    z-index: 10;
+}
+
 /* Vide */
 .recap-empty {
     grid-column: 1 / -1;

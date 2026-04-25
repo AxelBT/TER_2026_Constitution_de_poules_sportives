@@ -587,27 +587,25 @@ body {
     font-size: .815rem;
     gap: var(--space-sm);
     border-bottom: 1px solid var(--clr-surface-100);
-    transition: background var(--dur) ease;
 }
 
 .pool-team-name {
     overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
-    min-width: 0;
+    transition: all 0.3s ease;
 }
 
 .pool-team-name span {
     display: inline-block;
 }
 
-.pool-team-row:hover .pool-team-name span {
-    animation: scroll-text 10s linear infinite;
-}
-
-@keyframes scroll-text {
-    0%, 20%  { transform: translateX(0); }
-    80%, 100% { transform: translateX(-100%); }
+.pool-team-row:hover .pool-team-name {
+    overflow: visible;
+    white-space: normal;
+    /*background: white;*/
+    position: relative;
+    z-index: 10;
 }
 
 .pool-team-row:last-child { border-bottom: none; }
@@ -622,8 +620,7 @@ body {
     font-size: .73rem;
     color: var(--clr-surface-400);
     margin-left: auto;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 80px;
+    white-space: nowrap;
 }
 
 /* ──────────────────────────────────────
