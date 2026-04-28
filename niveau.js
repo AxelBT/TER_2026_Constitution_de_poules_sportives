@@ -261,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function jitterCoords(lat, lng, index, total) {
     if (total <= 1) return [lat, lng];
     const angle = (2 * Math.PI * index) / total;
-    const radius = 0.15; // ~15 km de décalage
+    const radius = 0.005; // ~15 km de décalage
     return [lat + radius * Math.sin(angle), lng + radius * Math.cos(angle)];
   }
 
@@ -297,6 +297,12 @@ document.addEventListener("DOMContentLoaded", () => {
         m.bindPopup(
           `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC " + c.ctc_num : "Club " + c.num_club}</span>`,
         );
+        m.on("mouseover", function (e) {
+          this.openPopup();
+        });
+        m.on("mouseout", function (e) {
+          this.closePopup();
+        });
         m.addTo(map);
         m.clubId = c.type === "CTC" ? c.ctc_num : c.num_club;
         m.equipeId = c.id;
@@ -311,34 +317,38 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
 
   function afficherErreurs() {
-    const clubsIgnores = JSON.parse(localStorage.getItem('clubs_ignorés') || '[]');
+    const clubsIgnores = JSON.parse(
+      localStorage.getItem("clubs_ignorés") || "[]",
+    );
     const equipesInconnues = window.equipesInconnues || []; // ton tableau produit par traiterCSV
 
-    const panel = document.getElementById('errors-panel');
+    const panel = document.getElementById("errors-panel");
     let visible = false;
 
     // Clubs non géocodés
-    const blockGeo = document.getElementById('block-geocodage');
+    const blockGeo = document.getElementById("block-geocodage");
     if (clubsIgnores.length > 0) {
-        document.getElementById('count-geocodage').textContent = clubsIgnores.length;
-        const ul = document.getElementById('list-geocodage');
-        ul.innerHTML = clubsIgnores.map(nom => `<li>${nom}</li>`).join('');
-        blockGeo.style.display = 'block';
-        visible = true;
+      document.getElementById("count-geocodage").textContent =
+        clubsIgnores.length;
+      const ul = document.getElementById("list-geocodage");
+      ul.innerHTML = clubsIgnores.map((nom) => `<li>${nom}</li>`).join("");
+      blockGeo.style.display = "block";
+      visible = true;
     }
 
     // Équipes non placées
-    const blockEq = document.getElementById('block-equipes');
+    const blockEq = document.getElementById("block-equipes");
     if (equipesInconnues.length > 0) {
-        document.getElementById('count-equipes').textContent = equipesInconnues.length;
-        const ul = document.getElementById('list-equipes');
-        ul.innerHTML = equipesInconnues.map(e => `<li>${e.nom}</li>`).join('');
-        blockEq.style.display = 'block';
-        visible = true;
+      document.getElementById("count-equipes").textContent =
+        equipesInconnues.length;
+      const ul = document.getElementById("list-equipes");
+      ul.innerHTML = equipesInconnues.map((e) => `<li>${e.nom}</li>`).join("");
+      blockEq.style.display = "block";
+      visible = true;
     }
 
-    panel.style.display = visible ? 'flex' : 'none';
-}
+    panel.style.display = visible ? "flex" : "none";
+  }
 
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
@@ -367,6 +377,12 @@ document.addEventListener("DOMContentLoaded", () => {
         m.bindPopup(
           `<strong>${equipe ? (equipe.type === "CTC" ? equipe.ctc_nom + " " + equipe.numero : equipe.nom_club + " " + equipe.numero) : "Inconnu"}</strong><br><span style="color:#888">${m.clubId}</span>`,
         );
+        m.on("mouseover", function (e) {
+          this.openPopup();
+        });
+        m.on("mouseout", function (e) {
+          this.closePopup();
+        });
       } else {
         m.setIcon(createPinIcon("#888780", 0.25));
         m.setZIndexOffset(0);
@@ -508,7 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ...poulesActuelles.map((p) => p.nb_max),
           );
           if (isExemptA && isExemptB) {
-            // normalement ce cas ne paut jamais arriver cas on ne peut pas sélectionner deux exempts
+            // normalement ce cas ne paut jamais arriver car on ne peut pas sélectionner deux exempts
             toast("Impossible d'échanger deux exempts", "error");
           } else if (isExemptA || isExemptB) {
             console.log("Cas d'un transfert vers un emplacement libre");
@@ -549,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (iA !== -1 && iB !== -1) {
               if (
-                pA.equipes[iA].id_club === pB.equipes[iB].id_club ||
+                pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
                 (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
                   !verifierClubDansPoule(pB, pA.equipes[iA]))
               ) {
