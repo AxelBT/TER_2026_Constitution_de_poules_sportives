@@ -149,7 +149,7 @@ async function traiter_csv_clubs(contenu) {
 
 async function geocoderAdresse(adresse, codePostal = "") {
     try {
-        let url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(adresse)}&limit=1`;
+        let url = `https://data.geopf.fr/geocodage/search/?q=${encodeURIComponent(adresse)}&limit=1`;
         
         if (codePostal) {
             url += `&postcode=${encodeURIComponent(codePostal)}`;

@@ -16,7 +16,7 @@ function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
   while (
     data.some(
       (e) =>
-        e.id_club === numClub &&
+        e.num_club === numClub &&
         e.numero === num &&
         e.type === (estCTC ? "CTC" : "Club"), // on compare uniquement entre mêmes types
     )
@@ -91,6 +91,7 @@ export async function traiterCSV(contenu) {
     ctc_num: headers.indexOf("CTC_NUMERO"),
     equipe_num: headers.indexOf("EQUIPE_NUMERO"),
     niveau: headers.indexOf("NIVEAU"),
+    statut_niveau: headers.indexOf("STATUT_NIVEAU"),
   };
 
   const colonnesManquantes = Object.entries(idx)
@@ -193,6 +194,8 @@ export async function traiterCSV(contenu) {
       niveau: niveau,
       latitude: parseFloat(club.latitude),
       longitude: parseFloat(club.longitude),
+      statut_niveau: colonnes[idx.statut_niveau]?.trim() || "",
+
     };
 
     if (estCTC) {
@@ -246,10 +249,9 @@ export function calculerBarycentre(equipes) {
   };
 }
 
-function definirCapacitesPoules(nb_poules, total_equipes) {
+export function definirCapacitesPoules(nb_poules, total_equipes) {
   const base = Math.floor(total_equipes / nb_poules);
   const reste = total_equipes % nb_poules;
-
   let capacites = [
     ...Array(reste).fill(base + 1),
     ...Array(nb_poules - reste).fill(base),
@@ -264,7 +266,7 @@ function definirCapacitesPoules(nb_poules, total_equipes) {
   return capacites;
 }
 
-function initialiserPoules(nb_poules, niveau, capacites) {
+export function initialiserPoules(nb_poules, niveau, capacites) {
   const lettres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   return Array.from({ length: nb_poules }, (_, i) => ({
