@@ -9,6 +9,8 @@ import {
   ajouterEquipeDansPoule,
 } from "./calcul-poules.js";
 
+import { genererPoulesNiveau } from "./calcul-poules-niveau.js";
+
 import { toast } from "./toast.js";
 
 let poulesActuelles = [];
@@ -241,7 +243,12 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("Pas d\'exempts dans des poules de 2.", "error");
         return;
       }*/
-      poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
+      if(config.mode === "niveau"){ 
+        console.log(equipes);
+        poulesActuelles = genererPoulesNiveau(equipes,nb_poules);
+        console.log("Poules générées par niveau :", poulesActuelles);
+      }
+      else poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
       if (poulesActuelles) {
         afficherPoules();
         highlightToutesLesPoules();
@@ -297,6 +304,12 @@ document.addEventListener("DOMContentLoaded", () => {
         m.bindPopup(
           `<strong>${c.type === "CTC" ? c.ctc_nom : c.nom_club} ${c.numero}</strong><br><span style="color:#888"> ${c.type === "CTC" ? "CTC " + c.ctc_num : "Club " + c.num_club}</span>`,
         );
+        m.on('mouseover', function (e) {
+            this.openPopup();
+        });
+        m.on('mouseout', function (e) {
+            this.closePopup();
+        });
         m.addTo(map);
         m.clubId = c.type === "CTC" ? c.ctc_num : c.num_club;
         m.equipeId = c.id;
@@ -367,6 +380,12 @@ document.addEventListener("DOMContentLoaded", () => {
         m.bindPopup(
           `<strong>${equipe ? (equipe.type === "CTC" ? equipe.ctc_nom + " " + equipe.numero : equipe.nom_club + " " + equipe.numero) : "Inconnu"}</strong><br><span style="color:#888">${m.clubId}</span>`,
         );
+        m.on('mouseover', function (e) {
+            this.openPopup();
+        });
+        m.on('mouseout', function (e) {
+            this.closePopup();
+        });
       } else {
         m.setIcon(createPinIcon("#888780", 0.25));
         m.setZIndexOffset(0);
@@ -549,7 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (iA !== -1 && iB !== -1) {
               if (
-                pA.equipes[iA].id_club === pB.equipes[iB].id_club ||
+                pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
                 (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
                   !verifierClubDansPoule(pB, pA.equipes[iA]))
               ) {
