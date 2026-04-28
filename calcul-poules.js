@@ -16,7 +16,7 @@ function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
   while (
     data.some(
       (e) =>
-        e.id_club === numClub &&
+        e.num_club === numClub &&
         e.numero === num &&
         e.type === (estCTC ? "CTC" : "Club"), // on compare uniquement entre mêmes types
     )
