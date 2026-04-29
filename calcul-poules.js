@@ -41,13 +41,6 @@ function verifierCoherenceCTC(data, ctcNum, ctcNom) {
   return existant.ctc_nom.toLowerCase() === ctcNom.toLowerCase();
 }
 
-function verifierCTCClubPorteur(data, ctcNum, numClub) {
-  const existant = data.find((e) => e.type === "CTC" && e.ctc_num === ctcNum);
-
-  if (!existant) return true;
-
-  return existant.num_club === numClub;
-}
 
 function determinerType(typeBrut) {
     const t = typeBrut.toLowerCase();
@@ -117,6 +110,7 @@ export async function traiterCSV(contenu) {
     const ctcNom = colonnes[idx.ctc_nom]?.trim();
     const ctcNum = colonnes[idx.ctc_num]?.trim();
     const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
+    const statut = colonnes[idx.statut_niveau]?.trim();
 
 
     const verifier_type = determinerType(type);
@@ -132,6 +126,7 @@ export async function traiterCSV(contenu) {
 
     // Exception pour le niveau
     if (config.mode === "niveau" && !niveau) champManquant = true;
+    if (config.mode === "niveau" && !statut) champManquant = true;
 
     if (champManquant) {
       toast(`Données incomplètes :  ligne ${i + 1}`, "error");
@@ -162,13 +157,6 @@ export async function traiterCSV(contenu) {
         );
         return { succes: false, tableau: [] };
       }
-      if (!verifierCTCClubPorteur(data, ctcNum, numClub)) {
-        toast(
-          `Incohérence : la CTC ${ctcNum} est associée à plusieurs clubs porteurs.`,
-          "error",
-        );
-        return { succes: false, tableau: [] };
-      }
     }
 
     const numEquipe = trouverNumeroEquipeDisponible(
@@ -194,8 +182,7 @@ export async function traiterCSV(contenu) {
       niveau: niveau,
       latitude: parseFloat(club.latitude),
       longitude: parseFloat(club.longitude),
-      statut_niveau: colonnes[idx.statut_niveau]?.trim() || "",
-
+      statut_niveau: statut,
     };
 
     if (estCTC) {
@@ -268,7 +255,6 @@ export function definirCapacitesPoules(nb_poules, total_equipes) {
 
 export function initialiserPoules(nb_poules, niveau, capacites) {
   const lettres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
   return Array.from({ length: nb_poules }, (_, i) => ({
     nom: lettres[i],
     niveau: niveau,
@@ -334,7 +320,12 @@ function choisirGrainesOptimisees(
 }
 
 export function verifierClubDansPoule(poule, equipe) {
-  return poule.equipes.some((e) => e.num_club === equipe.num_club);
+  return poule.equipes.some((e) => {
+    if (equipe.type === "CTC" || e.type === "CTC") {
+      return e.ctc_num === equipe.ctc_num;
+    }
+    return e.num_club === equipe.num_club;
+  });
 }
 
 function choisirMeilleurePoule(poules, equipe) {
@@ -657,6 +648,15 @@ export function generer_poules(equipes, nb_poules, nb_max) {
   console.log("Poules générées :", poules);
   return poules;
 }
+
+
+/*function verifierCTCClubPorteur(data, ctcNum, numClub) {
+  const existant = data.find((e) => e.type === "CTC" && e.ctc_num === ctcNum);
+
+  if (!existant) return true;
+
+  return existant.num_club === numClub;
+}*/
 
 /*export function traiterCSV(contenu) {
     const lignes = contenu.split("\n");

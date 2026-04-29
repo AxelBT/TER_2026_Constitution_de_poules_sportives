@@ -178,6 +178,28 @@
 
     </main>
 </div>
+<!-- Modale de confirmation retour config -->
+<div class="modal-overlay" id="modal-retour" style="display:none">
+    <div class="modal">
+        <div class="modal-icon modal-icon--warn">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <h3 class="modal-title">Retour à la configuration</h3>
+        <p class="modal-message">
+            Vous allez retourner à la configuration générale.<br>
+            <strong>Toutes les poules générées seront supprimées.</strong><br>
+            Voulez-vous continuer ?
+        </p>
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn--cancel" id="modal-btn-annuler">Annuler</button>
+            <button class="modal-btn modal-btn--confirm" id="modal-btn-confirmer">Oui, retourner</button>
+        </div>
+    </div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="niveau.js" defer></script>

@@ -1,110 +1,174 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Configuration du Championnat</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-<body>
+  <body>
+    <div class="toast-container" id="toast-container"></div>
+
     <div class="container">
-        <div class="card">
-            <div class="toast-container" id="toast-container"></div>
-            <header class="card-header">
-                <h1>Initialisation du Championnat</h1>
-                <p>Importez vos clubs et définissez les paramètres de base.</p>
-            </header>
+      <div class="card">
+        <header class="card-header">
+          <h1>Initialisation du Championnat</h1>
+          <p>Importez vos clubs et définissez les paramètres de base.</p>
+        </header>
 
-            
-            <form id="form-config">
+        <form id="form-config">
+          <div class="form-group">
+            <label for="cat-select">Choisissez une catégorie&nbsp;:</label>
+            <select name="category" id="cat-select">
+              <option value="">Veuillez choisir une option</option>
+              <option value="senior">Senior</option>
+              <option value="junior">Junior</option>
+            </select>
+          </div>
 
-                <div class="form-group">
-                    <label for="cat-select">Choisissez une catégorie&nbsp;:</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nb_niveaux">Nombre de niveaux</label>
+              <input
+                type="number"
+                id="nb_niveaux"
+                name="nb_niveaux"
+                min="1"
+                max="5"
+                value="1"
+                required
+              />
+            </div>
 
-                    <select name="category" id="cat-select">
-                        <option value="">Veuillez choisir une option</option>
-                        <option value="senior">Senior</option>
-                        <option value="junior">Junior</option>
-                        
-                    </select>
-                </div>
+            <div class="form-group">
+              <label>Type de Championnat</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="genre" value="masculin" checked />
+                  <span>Masculin</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="genre" value="feminin" />
+                  <span>Féminin</span>
+                </label>
+              </div>
+            </div>
+          </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="nb_niveaux">Nombre de niveaux</label>
-                        <input type="number" id="nb_niveaux" name="nb_niveaux" min="1" max="5" value="1" required>
-                    </div>
+          <div class="form-group">
+            <label>Critère de génération des poules</label>
+            <div class="toggle-container">
+              <input
+                type="radio"
+                name="generation-choice"
+                id="gen-distance"
+                class="toggle-input"
+                checked
+              />
+              <label for="gen-distance" class="toggle-label">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"
+                  />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                Distance
+              </label>
+              <input
+                type="radio"
+                name="generation-choice"
+                id="gen-level"
+                class="toggle-input"
+              />
+              <label for="gen-level" class="toggle-label">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                Niveau
+              </label>
+            </div>
+          </div>
 
-                    <div class="form-group">
-                        <label>Type de Championnat</label>
-                        <div class="radio-group">
-                            <label class="radio-label">
-                                <input type="radio" name="genre" value="masculin" checked>
-                                <span>Masculin</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="genre" value="feminin">
-                                <span>Féminin</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-  <label>Critère de génération des poules</label>
-  <div class="toggle-container">
-    <input
-      type="radio"
-      name="generation-choice"
-      id="gen-distance"
-      class="toggle-input"
-      checked
-    />
-    <label for="gen-distance" class="toggle-label">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" /><circle cx="12" cy="10" r="3" /></svg>
-      Distance
-    </label>
+          <div class="form-group">
+            <label>Liste des clubs (Format CSV)</label>
+            <div class="drop-zone" id="drop-zone">
+              <input
+                type="file"
+                id="file_csv"
+                name="file_csv"
+                accept=".csv"
+                class="file-input"
+              />
+              <div class="drop-zone-content">
+                <p id="file-label">
+                  Glissez votre fichier ici ou <strong>parcourez</strong>
+                </p>
+                <p class="file-limit">Format .csv uniquement</p>
+              </div>
+            </div>
 
-    <input
-      type="radio"
-      name="generation-choice"
-      id="gen-level"
-      class="toggle-input"
-    />
-    <label for="gen-level" class="toggle-label">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
-      Niveau
-    </label>
-
-    
-  </div>
-</div>
-
-                <div class="form-group">
-                    <label>Liste des clubs (Format CSV)</label>
-                    <div class="drop-zone" id="drop-zone">
-                        <input type="file" id="file_csv" name="file_csv" accept=".csv" class="file-input">
-                        <div class="drop-zone-content">
-                            <!--span class="icon">📁</span-->
-                            <p id="file-label">Glissez votre fichier ici ou <strong>parcourez</strong></p>
-                            <p class="file-limit">Format .csv uniquement</p>
-                        </div>
-                    </div>
-                </div>
-                <div id="loader" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding: 3rem;">
+            <!-- Note géocodage -->
+            <div class="file-notice">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>
+                Le fichier CSV doit inclure les colonnes
+                <code>latitude</code> et <code>longitude</code> pour chaque
+                club. Vous pouvez géocoder votre fichier au préalable via
+                <a
+                  href="https://adresse.data.gouv.fr/csv"
+                  target="_blank"
+                  rel="noopener"
+                  >adresse.data.gouv.fr</a
+                >.
+              </span>
+            </div>
+          </div><div id="loader" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding: 3rem;">
   <div class="spinner"></div>
   <p class="loader-label">Récupération des adresses des poules<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
 </div>
 
-
-                <button type="submit" class="btn-primary">Passer à la configuration des niveaux →</button>
-            </form>
-        </div>
+          <button type="submit" class="btn-primary">
+            Passer à la configuration des niveaux →
+          </button>
+        </form>
+      </div>
     </div>
 
-    <script type="module" src="config.js" ></script>
-</body>
-
+    <script type="module" src="config.js"></script>
+  </body>
 </html>
