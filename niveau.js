@@ -250,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nb_equipes = equipesActuelles.length;
     if (nb_poules * nb_max < nb_equipes) {
       toast(
-        "Capacité insuffisante : augmente le nombre de poules ou la taille max.",
+        "Capacité insuffisante : Veuillez augmenter le nombre de poules ou la taille max.",
         "error",
       );
       return;
@@ -259,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules
     if (nb_equipes <= nb_poules * (nb_max - 1)) {
       toast(
-        "Trop peu d'équipes : réduis le nombre de poules ou la taille max.",
+        "Trop peu d'équipes : Veuillez réduire le nombre de poules ou la taille max.",
         "error",
       );
       return;
@@ -277,32 +277,19 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("Pas d\'exempts dans des poules de 2.", "error");
         return;
       }*/
-      if(config.mode === "niveau"){ 
-        console.log(equipes);
-        poulesActuelles = genererPoulesNiveau(equipes,nb_poules);
-         if (poulesActuelles) {
-        afficherPoules();
-        highlightToutesLesPoules();
-        toast(
-          `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
-          "success",
-        );}
-      }
-      else poulesActuelles = generer_poules(equipes, nb_poules, nb_max);
-      if (poulesActuelles) {
-        afficherPoules();
-        highlightToutesLesPoules();
-        toast(
-          `${equipes.length} équipes réparties en ${poulesActuelles.length} poules.`,
-          "success",
-        );
-      }
-      /*localStorage.setItem(
-          `${config.categorie}-${config.genre}-${config.niveauActuel}`,
-          JSON.stringify(poules),
-        );*/
-    };
-    reader.readAsText(file);
+    if (config.mode === "niveau") {
+      poulesActuelles = genererPoulesNiveau(equipesActuelles, nb_poules);
+    } else {
+      poulesActuelles = generer_poules(equipesActuelles, nb_poules, nb_max);
+    }
+    if (poulesActuelles) {
+      afficherPoules();
+      highlightToutesLesPoules();
+      toast(
+        `${equipesActuelles.length} équipes réparties en ${poulesActuelles.length} poules.`,
+        "success",
+      );
+    }
   });
   
   function jitterCoords(lat, lng, index, total) {
