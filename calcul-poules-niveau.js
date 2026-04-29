@@ -3,6 +3,10 @@ import {
   definirCapacitesPoules,
   initialiserPoules,
   verifierClubDansPoule,
+  distance,
+  calculerBarycentre,
+  calculerDistanceMoyenne,
+  finaliserStatistiquesPoules
 } from "./calcul-poules.js";
 
 
@@ -39,6 +43,8 @@ function calculerQuotasParStatut(equipes, nb_poules) {
 function ajouterEquipeDansPouleNiveau(poule, equipe) {
   if (!verifierClubDansPoule(poule, equipe)) {
     poule.equipes.push(equipe);
+    poule.barycentre = calculerBarycentre(poule.equipes);
+    poule.distance_moyenne = calculerDistanceMoyenne(poule);
     return true;
   }
   return false;
@@ -92,7 +98,7 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
 
       if (!placeeDansCeTour) {
    
-        console.error(
+        console.warn(
           `[genererPoulesNiveau] ${restantes.length} équipe(s) "${statut}" ` +
             `non placée(s) par les quotas — placement de secours.`
         );
@@ -123,13 +129,126 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
   }
 }
 
+function distanceKm(a, b) {
+  if (
+    !Number.isFinite(a?.latitude) ||
+    !Number.isFinite(a?.longitude) ||
+    !Number.isFinite(b?.latitude) ||
+    !Number.isFinite(b?.longitude)
+  ) {
+    return 0;
+  }
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.latitude)) *
+      Math.cos(toRad(b.latitude)) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function sommeDistancesPoule(poule) {
+  // Somme des distances entre toutes les paires d'équipes de la poule
+  // (proxy de la distance totale parcourue lors d'un championnat aller-retour).
+  let total = 0;
+  const eqs = poule.equipes;
+  for (let i = 0; i < eqs.length; i++) {
+    for (let j = i + 1; j < eqs.length; j++) {
+      total += distanceKm(eqs[i], eqs[j]);
+    }
+  }
+  return total;
+}
+ 
+function sommeDistancesGlobale(poules) {
+  return poules.reduce((s, p) => s + sommeDistancesPoule(p), 0);
+}
+ 
+// --------- Optimisation par échanges intra-statut --------------------
+ 
+function optimiserDistances(poules, maxPasses = 20) {
+  let scoreCourant = sommeDistancesGlobale(poules);
+  let passe = 0;
+ 
+  while (passe < maxPasses) {
+    let ameliore = false;
+ 
+    // Parcourt toutes les paires de poules
+    for (let pa = 0; pa < poules.length; pa++) {
+      for (let pb = pa + 1; pb < poules.length; pb++) {
+        const eqsA = poules[pa].equipes;
+        const eqsB = poules[pb].equipes;
+ 
+        // Parcourt toutes les paires d'équipes (a, b) entre ces poules
+        for (let ia = 0; ia < eqsA.length; ia++) {
+          for (let ib = 0; ib < eqsB.length; ib++) {
+            const eqA = eqsA[ia];
+            const eqB = eqsB[ib];
+ 
+            // Contrainte dure : on n'échange que des équipes de même statut
+            // pour préserver les quotas (et donc l'équilibre sportif déjà construit).
+            if (eqA.statut_niveau !== eqB.statut_niveau) continue;
+ 
+            // Vérifie que l'échange ne viole pas la contrainte de club
+            const pouleASansA = {
+              ...poules[pa],
+              equipes: eqsA.filter((_, k) => k !== ia),
+            };
+            const pouleBSansB = {
+              ...poules[pb],
+              equipes: eqsB.filter((_, k) => k !== ib),
+            };
+            if (verifierClubDansPoule(pouleASansA, eqB)) continue;
+            if (verifierClubDansPoule(pouleBSansB, eqA)) continue;
+ 
+            // Calcule le gain local : on n'a besoin de comparer que les deux
+            // poules touchées par l'échange, pas tout le championnat.
+            const avant =
+              sommeDistancesPoule(poules[pa]) +
+              sommeDistancesPoule(poules[pb]);
+ 
+            // Échange virtuel
+            eqsA[ia] = eqB;
+            eqsB[ib] = eqA;
+ 
+            const apres =
+              sommeDistancesPoule(poules[pa]) +
+              sommeDistancesPoule(poules[pb]);
+ 
+            if (apres < avant) {
+              // On garde l'échange
+              scoreCourant = scoreCourant - avant + apres;
+              ameliore = true;
+            } else {
+              // On annule
+              eqsA[ia] = eqA;
+              eqsB[ib] = eqB;
+            }
+          }
+        }
+      }
+    }
+ 
+    passe++;
+    if (!ameliore) break; // optimum local atteint
+  }
+ 
+  return { poules, score: scoreCourant, passes: passe };
+}
+
 
 export function genererPoulesNiveau(equipes, nb_poules) {
   const total_equipes = equipes.length;
   const capacites = definirCapacitesPoules(nb_poules, total_equipes);
   const poules = initialiserPoules(nb_poules, "Niveau", capacites);
   const quotas = calculerQuotasParStatut(equipes, nb_poules);
-  console.log("Quotas par statut :", quotas);
   distribuerEquipesNiveau(poules, equipes, quotas);
+  optimiserDistances(poules);
+  console.log("Poules après optimisation:", poules);
+  finaliserStatistiquesPoules(poules);
   return poules;
 }
+ 

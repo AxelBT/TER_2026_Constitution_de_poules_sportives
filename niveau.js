@@ -250,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nb_equipes = equipesActuelles.length;
     if (nb_poules * nb_max < nb_equipes) {
       toast(
-        "Capacité insuffisante : augmente le nombre de poules ou la taille max.",
+        "Capacité insuffisante : Veuillez augmenter le nombre de poules ou la taille max.",
         "error",
       );
       return;
@@ -259,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules
     if (nb_equipes <= nb_poules * (nb_max - 1)) {
       toast(
-        "Trop peu d'équipes : réduis le nombre de poules ou la taille max.",
+        "Trop peu d'équipes : Veuillez réduire le nombre de poules ou la taille max.",
         "error",
       );
       return;
@@ -278,11 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }*/
     if (config.mode === "niveau") {
-      console.log(equipesActuelles);
       poulesActuelles = genererPoulesNiveau(equipesActuelles, nb_poules);
-      console.log("Poules générées par niveau :", poulesActuelles);
-    } else
+    } else {
       poulesActuelles = generer_poules(equipesActuelles, nb_poules, nb_max);
+    }
     if (poulesActuelles) {
       afficherPoules();
       highlightToutesLesPoules();
@@ -292,11 +291,11 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
-
+  
   function jitterCoords(lat, lng, index, total) {
     if (total <= 1) return [lat, lng];
     const angle = (2 * Math.PI * index) / total;
-    const radius = 0.005; // ~15 km de décalage
+    const radius = 0.005; // 500 m de décalage
     return [lat + radius * Math.sin(angle), lng + radius * Math.cos(angle)];
   }
 
@@ -365,7 +364,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const clubsIgnores = JSON.parse(
       localStorage.getItem("clubs_ignorés") || "[]",
     );
-    const equipesInconnues = window.equipesInconnues || []; // ton tableau produit par traiterCSV
+    const equipesInconnues = JSON.parse(
+      localStorage.getItem("equipesInconnues") || "[]",
+    ); // ton tableau produit par traiterCSV
 
     const panel = document.getElementById("errors-panel");
     let visible = false;
@@ -381,16 +382,34 @@ document.addEventListener("DOMContentLoaded", () => {
       visible = true;
     }
 
-    // Équipes non placées
-    const blockEq = document.getElementById("block-equipes");
     if (equipesInconnues.length > 0) {
-      document.getElementById("count-equipes").textContent =
-        equipesInconnues.length;
-      const ul = document.getElementById("list-equipes");
-      ul.innerHTML = equipesInconnues.map((e) => `<li>${e.nom}</li>`).join("");
-      blockEq.style.display = "block";
-      visible = true;
-    }
+    // Cache la carte
+    document.querySelector('.map-wrapper').style.display = 'none';
+
+    // Affiche le message dans la zone principale
+    const poolsGrid = document.getElementById('pools-grid');
+    poolsGrid.innerHTML = `
+        <div class="error-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="error-state-title">Impossible de générer les poules</p>
+            <p class="error-state-desc">
+                Les équipes suivantes n'ont pas pu être placées car leur club est introuvable
+                ou ses coordonnées sont manquantes :
+            </p>
+            <ul class="error-state-list">
+                ${equipesInconnues.map(e => `<li>${e.nom}</li>`).join('')}
+            </ul>
+            <p class="error-state-hint">
+                Vérifiez que ces clubs sont présents dans votre fichier CSV et qu'ils ont bien été géocodés.
+            </p>
+        </div>
+    `;
+    visible = false;
+}
 
     panel.style.display = visible ? "flex" : "none";
   }
