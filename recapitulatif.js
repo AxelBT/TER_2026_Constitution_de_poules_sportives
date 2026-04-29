@@ -255,17 +255,17 @@ document.addEventListener("DOMContentLoaded", () => {
         rows.push([
           `Poule ${lettre}`,
           "",
-          `Distance moyenne : ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km`,
+          `Distance moyenne : ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km ---- Écart-type : ${parseFloat(poule.ecart_type || 0).toFixed(0)}`,
         ]);
 
         // En-têtes colonnes
-        rows.push(["Équipe", "Club", "Distance totale (km)"]);
+        rows.push(["Équipe", "Numéro Club", "Distance totale (km)"]);
 
         // Équipes
         poule.equipes.forEach((e) => {
           rows.push([
-            e.nom || "",
-            e.id_club || "",
+            e.id || "",
+            e.num_club || "",
             parseFloat(e.distance_totale || 0).toFixed(0),
           ]);
         });
@@ -275,9 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Créer la feuille
       const ws = XLSX.utils.aoa_to_sheet(rows);
-
+      
       // Largeurs de colonnes
-      ws["!cols"] = [{ wch: 32 }, { wch: 20 }, { wch: 22 }];
+      ws["!cols"] = [{ wch: 56 }, { wch: 20 }, { wch: 38 }];
 
       const nomFeuille = `Niveau ${niveau}`;
       XLSX.utils.book_append_sheet(wb, ws, nomFeuille);
