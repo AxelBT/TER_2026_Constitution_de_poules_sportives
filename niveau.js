@@ -471,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
 
-  function highlightPoule(pouleIndex) {
+  /*function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
       //resetMarkers();
@@ -501,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.on("mouseout", function (e) {
           this.closePopup();
         });*/
-        m.bindTooltip(
+  /*m.bindTooltip(
           `<strong>${equipe.type === "CTC" ? equipe.ctc_nom : equipe.nom_club} ${equipe.numero}</strong><br>
      <span style="color:#888">${equipe.type === "CTC" ? "CTC " + equipe.ctc_num : "Club " + equipe.num_club}</span>`,
           {
@@ -526,6 +526,51 @@ document.addEventListener("DOMContentLoaded", () => {
         pBounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [60, 60], maxZoom: 10 },
       );
+  }*/
+  function highlightPoule(pouleIndex) {
+    // Reclic sur la même poule → reset
+    if (highlightPoule._actif === pouleIndex) {
+      highlightPoule._actif = null;
+      highlightToutesLesPoules();
+      // fermer tous les tooltips
+      markers.forEach((m) => m.closeTooltip());
+      document
+        .querySelectorAll(".pool-card")
+        .forEach((c) => c.classList.remove("pool-card--active"));
+      return;
+    }
+
+    highlightPoule._actif = pouleIndex;
+    const poule = poulesActuelles[pouleIndex];
+    const couleur = PALETTE[pouleIndex % PALETTE.length];
+    const idsPoule = new Set(poule.equipes.map((e) => e.id));
+
+    markers.forEach((m) => {
+      if (idsPoule.has(m.equipeId)) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+        m.openTooltip(); 
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.2));
+        m.setZIndexOffset(0);
+        m.closeTooltip(); 
+      }
+    });
+
+    document.querySelectorAll(".pool-card").forEach((card, i) => {
+      card.classList.toggle("pool-card--active", i === pouleIndex);
+    });
+
+    // Recentre sur les équipes de la poule
+    const pBounds = markers
+      .filter((m) => idsPoule.has(m.equipeId))
+      .map((m) => m.getLatLng());
+    if (pBounds.length) {
+      map.fitBounds(
+        pBounds.map((ll) => [ll.lat, ll.lng]),
+        { padding: [60, 60], maxZoom: 10 },
+      );
+    }
   }
 
   function highlightToutesLesPoules() {
@@ -1088,7 +1133,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span class="pool-team-name">
                       ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                     </span>
-                    <span class="pool-team-club">${e.distance_totale ? e.distance_totale + " Km" : ""}</span>
+                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} Km</span>
                 </div>
             `;
           })
