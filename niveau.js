@@ -212,7 +212,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const { succes, tableau } = await traiterCSV(contenu);
 
       if (!succes) {
-        equipesActuelles = []; // reset
+        equipesActuelles = []; //
+        if (tableau.length != 0) {
+          localStorage.setItem("equipesInconnues", JSON.stringify(tableau));
+        }
         return;
       }
 
@@ -240,6 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnGenerer.addEventListener("click", () => {
+    afficherErreurs();
     if (!equipesActuelles.length) {
       toast("Veuillez d'abord déposer un fichier valide.", "warn");
       return;
@@ -291,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
-  
+
   function jitterCoords(lat, lng, index, total) {
     if (total <= 1) return [lat, lng];
     const angle = (2 * Math.PI * index) / total;
@@ -366,54 +370,104 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const equipesInconnues = JSON.parse(
       localStorage.getItem("equipesInconnues") || "[]",
-    ); // ton tableau produit par traiterCSV
+    );
 
     const panel = document.getElementById("errors-panel");
     let visible = false;
 
-    // Clubs non géocodés
+    // Gestion des clubs non géocodés (inchangée)
     const blockGeo = document.getElementById("block-geocodage");
     if (clubsIgnores.length > 0) {
-      document.getElementById("count-geocodage").textContent =
-        clubsIgnores.length;
+      const countGeo = document.getElementById("count-geocodage");
+      if (countGeo) countGeo.textContent = clubsIgnores.length;
+
       const ul = document.getElementById("list-geocodage");
-      ul.innerHTML = clubsIgnores.map((nom) => `<li>${nom}</li>`).join("");
-      blockGeo.style.display = "block";
+      if (ul)
+        ul.innerHTML = clubsIgnores.map((nom) => `<li>${nom}</li>`).join("");
+
+      if (blockGeo) blockGeo.style.display = "block";
       visible = true;
     }
 
+    if (panel) panel.style.display = visible ? "flex" : "none";
+
+    // Nouvelle gestion des équipes inconnues avec un Modal
     if (equipesInconnues.length > 0) {
-    // Cache la carte
-    document.querySelector('.map-wrapper').style.display = 'none';
+      // Supprime un éventuel modal précédent pour éviter les doublons
+      const existingModal = document.getElementById("modal-equipes-inconnues");
+      if (existingModal) {
+        existingModal.remove();
+      }
 
-    // Affiche le message dans la zone principale
-    const poolsGrid = document.getElementById('pools-grid');
-    poolsGrid.innerHTML = `
-        <div class="error-state">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <p class="error-state-title">Impossible de générer les poules</p>
-            <p class="error-state-desc">
-                Les équipes suivantes n'ont pas pu être placées car leur club est introuvable
-                ou ses coordonnées sont manquantes :
-            </p>
-            <ul class="error-state-list">
-                ${equipesInconnues.map(e => `<li>${e.nom}</li>`).join('')}
-            </ul>
-            <p class="error-state-hint">
-                Vérifiez que ces clubs sont présents dans votre fichier CSV et qu'ils ont bien été géocodés.
-            </p>
-        </div>
+      // Création du conteneur modal
+      const modalOverlay = document.createElement("div");
+      modalOverlay.className = "modal-overlay";
+      modalOverlay.id = "modal-equipes-inconnues";
+      modalOverlay.style.display = "flex";
+
+      modalOverlay.innerHTML = `
+      <div class="modal">
+          <div class="modal-icon modal-icon--warn">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+          </div>
+          <h3 class="modal-title">Impossible de générer les poules</h3>
+          <p class="modal-message">
+              Les équipes suivantes n'ont pas pu être placées car leur club est introuvable ou ses coordonnées sont manquantes :
+          </p>
+          
+          <!-- Section Scrollable pour les équipes -->
+          <div style="max-height: 180px; overflow-y: auto; text-align: left; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; margin: 15px 0;">
+              <ul class="error-state-list" style="margin: 0; padding-left: 20px;">
+                  ${equipesInconnues.map((e) => `<li>${e.nom}</li>`).join("")}
+              </ul>
+          </div>
+          
+          <p class="modal-message" style="font-size: 0.85em; opacity: 0.8; margin-bottom: 20px;">
+              Vérifiez que ces clubs sont présents dans votre fichier CSV et qu'ils ont bien été géocodés.
+          </p>
+          
+          <!-- Boutons d'action -->
+          <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button class="modal-btn modal-btn--cancel" id="btn-autre-fichier">Soumettre un autre fichier</button>
+              <button class="modal-btn modal-btn--confirm" id="btn-retour-config">Retour à la configuration</button>
+          </div>
+      </div>
     `;
-    visible = false;
-}
 
-    panel.style.display = visible ? "flex" : "none";
+      document.body.appendChild(modalOverlay);
+
+      // Optionnel : cacher la carte en arrière-plan pendant l'affichage de l'erreur
+      const mapWrapper = document.querySelector(".map-wrapper");
+      if (mapWrapper) mapWrapper.style.opacity = "0.3";
+
+      // Logique du bouton "Retour à la configuration"
+      document
+        .getElementById("btn-retour-config")
+        .addEventListener("click", () => {
+          localStorage.clear();
+          window.location.href = "poule.html"; // Page de configuration racine déduite du code
+        });
+
+      // Logique du bouton "Soumettre un autre fichier"
+      document
+        .getElementById("btn-autre-fichier")
+        .addEventListener("click", () => {
+          modalOverlay.style.display = "none";
+          if (mapWrapper) mapWrapper.style.opacity = "1";
+
+          // Ouvre automatiquement la fenêtre de sélection de fichier
+          const fileInput = document.getElementById("file_csv_niveau");
+          if (fileInput) fileInput.click();
+
+          // Nettoyer la variable d'erreurs pour éviter que le modal ne revienne en boucle
+          localStorage.removeItem("equipesInconnues");
+        });
+    }
   }
-
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
 
@@ -491,9 +545,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
     highlightPoule._actif = null;
-    const bounds = markers.map(m => m.getLatLng());
+    const bounds = markers.map((m) => m.getLatLng());
     if (bounds.length) {
-        map.fitBounds(bounds.map(ll => [ll.lat, ll.lng]), { padding: [40, 40] });
+      map.fitBounds(
+        bounds.map((ll) => [ll.lat, ll.lng]),
+        { padding: [40, 40] },
+      );
     }
   }
 
@@ -517,226 +574,267 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById("edit-overlay");
 
     btn.classList.toggle("active", actif);
-    btn.textContent = actif
-      ? "✕ Terminer la modification"
-      : "Modifier les poules";
-    badge.classList.toggle("visible", actif);
-    overlay.classList.toggle("visible", actif);
-    hint.textContent = actif
-      ? "Cliquez sur deux équipes pour les échanger."
-      : "";
+
+    // Mise à jour de l'icône et du texte selon l'état
+    if (actif) {
+      btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Terminer la modification</span>`;
+    } else {
+      btn.innerHTML = `
+            <svg id="icon-swap" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
+            </svg>
+            <span>Modifier les poules</span>`;
+    }
+
+    if (badge) badge.classList.toggle("visible", actif);
+    if (overlay) overlay.classList.toggle("visible", actif);
+    if (hint)
+      hint.textContent = actif
+        ? "Cliquez sur deux équipes pour les échanger."
+        : "";
 
     if (actif) {
+      // Affichage de la notification pour guider l'utilisateur
+      toast(
+        "Mode édition : Cliquez sur deux équipes dans la grille ou sur la carte pour les échanger.",
+        "info",
+      );
+
       highlightPoule._actif = null;
-      //resetMarkers();
       document
         .querySelectorAll(".pool-card")
         .forEach((c) => c.classList.remove("pool-card--active"));
       afficherPoules();
     } else {
-      markers.forEach(m => m.off("click"));
+      markers.forEach((m) => m.off("click"));
       highlightToutesLesPoules();
       afficherPoules();
     }
   }
-
   /**
- * Fonction commune — effectue le swap entre deux équipes
- * appelée par attacherListenersEdition et attacherListenersMarqueurs
- */
-function effectuerEchange(sel, pi, eid) {
+   * Fonction commune — effectue le swap entre deux équipes
+   * appelée par attacherListenersEdition et attacherListenersMarqueurs
+   */
+  function effectuerEchange(sel, pi, eid) {
     const pA = poulesActuelles[sel.pi];
     const pB = poulesActuelles[pi];
     if (!pA || !pB) return;
 
-    const iA = pA.equipes.findIndex(e => e.id === sel.eid);
-    const iB = pB.equipes.findIndex(e => e.id === eid);
+    const iA = pA.equipes.findIndex((e) => e.id === sel.eid);
+    const iB = pB.equipes.findIndex((e) => e.id === eid);
 
     if (iA === -1 || iB === -1) return;
 
     if (
-        pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
-        (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
-         !verifierClubDansPoule(pB, pA.equipes[iA]))
+      pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
+      (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
+        !verifierClubDansPoule(pB, pA.equipes[iA]))
     ) {
-        [
-            poulesActuelles[sel.pi].equipes[iA],
-            poulesActuelles[pi].equipes[iB],
-        ] = [
-            poulesActuelles[pi].equipes[iB],
-            poulesActuelles[sel.pi].equipes[iA],
-        ];
+      [poulesActuelles[sel.pi].equipes[iA], poulesActuelles[pi].equipes[iB]] = [
+        poulesActuelles[pi].equipes[iB],
+        poulesActuelles[sel.pi].equipes[iA],
+      ];
 
-        poulesActuelles[sel.pi].distance_moyenne = calculerDistanceMoyenne(poulesActuelles[sel.pi]);
-        poulesActuelles[pi].distance_moyenne     = calculerDistanceMoyenne(poulesActuelles[pi]);
-        poulesActuelles[sel.pi].barycentre       = calculerBarycentre(poulesActuelles[sel.pi].equipes);
-        poulesActuelles[pi].barycentre           = calculerBarycentre(poulesActuelles[pi].equipes);
+      poulesActuelles[sel.pi].distance_moyenne = calculerDistanceMoyenne(
+        poulesActuelles[sel.pi],
+      );
+      poulesActuelles[pi].distance_moyenne = calculerDistanceMoyenne(
+        poulesActuelles[pi],
+      );
+      poulesActuelles[sel.pi].barycentre = calculerBarycentre(
+        poulesActuelles[sel.pi].equipes,
+      );
+      poulesActuelles[pi].barycentre = calculerBarycentre(
+        poulesActuelles[pi].equipes,
+      );
 
-        finaliserStatistiquesPoules(poulesActuelles);
+      finaliserStatistiquesPoules(poulesActuelles);
 
-        const hint = document.getElementById("edit-hint");
-        if (hint) {
-            hint.textContent = "✓ Échange effectué.";
-            setTimeout(() => {
-                if (modeEdition)
-                    hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-            }, 2500);
-        }
+      const hint = document.getElementById("edit-hint");
+      if (hint) {
+        hint.textContent = "✓ Échange effectué.";
+        setTimeout(() => {
+          if (modeEdition)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+        }, 2500);
+      }
 
-        return true; // échange réussi
+      return true; // échange réussi
     } else {
-        toast("Une équipe de ce club appartient déjà à cette poule", "error");
-        return false; // échange refusé
+      toast("Une équipe de ce club appartient déjà à cette poule", "error");
+      return false; // échange refusé
     }
-}
+  }
 
   function attacherListenersEdition() {
     document.querySelectorAll(".pool-team-row").forEach((el) => {
-        el.addEventListener("click", (e) => {
-            e.stopPropagation();
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
 
-            const pi  = Number(el.dataset.pouleIndex);
-            const eid = el.dataset.equipeId;
-            if (isNaN(pi) || eid === undefined) return;
+        const pi = Number(el.dataset.pouleIndex);
+        const eid = el.dataset.equipeId;
+        if (isNaN(pi) || eid === undefined) return;
 
-            if (!selection) {
-                selection = { pi, eid, el };
-                el.classList.add("selected");
-                const hint = document.getElementById("edit-hint");
-                if (hint) hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-                return;
+        if (!selection) {
+          selection = { pi, eid, el };
+          el.classList.add("selected");
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
+          return;
+        }
+
+        // Même équipe → désélection
+        if (selection.eid === eid && selection.pi === pi) {
+          selection.el.classList.remove("selected");
+          selection = null;
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+          return;
+        }
+
+        // Même poule ou deux exempts → changer la sélection
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
+          selection.el.classList.remove("selected");
+          selection = { pi, eid, el };
+          el.classList.add("selected");
+          return;
+        }
+
+        // Cas exempt
+        const isExemptA = selection.eid === "exempt";
+        const isExemptB = eid === "exempt";
+
+        if (isExemptA && isExemptB) {
+          toast("Impossible d'échanger deux exempts", "error");
+          return;
+        }
+
+        const sel = selection;
+        el.classList.add("selected");
+
+        setTimeout(() => {
+          if (!sel) return;
+
+          if (isExemptA || isExemptB) {
+            // logique transfert exempt — inchangée
+            const nb_max_equipes = Math.max(
+              ...poulesActuelles.map((p) => p.nb_max),
+            );
+            const pA = poulesActuelles[sel.pi];
+            const pB = poulesActuelles[pi];
+            const sourcePoule = isExemptB ? pA : pB;
+            const destPoule = isExemptB ? pB : pA;
+            const equipeId = isExemptB ? sel.eid : eid;
+
+            const idx = sourcePoule.equipes.findIndex((e) => e.id === equipeId);
+            const equipeObj = sourcePoule.equipes[idx];
+
+            if (nb_max_equipes === sourcePoule.nb_max) {
+              if (!verifierClubDansPoule(destPoule, equipeObj)) {
+                sourcePoule.equipes.splice(idx, 1);
+                sourcePoule.distance_moyenne =
+                  calculerDistanceMoyenne(sourcePoule);
+                sourcePoule.barycentre = calculerBarycentre(
+                  sourcePoule.equipes,
+                );
+                sourcePoule.nb_max--;
+                destPoule.nb_max++;
+                ajouterEquipeDansPoule(destPoule, equipeObj);
+                finaliserStatistiquesPoules(poulesActuelles);
+              } else {
+                toast(
+                  "Il existe déjà une équipe du même club dans la poule de destination",
+                  "error",
+                );
+              }
+            } else {
+              toast("Pas plus d'un exempt dans une poule", "error");
             }
+          } else {
+            // ← appel à la fonction commune
+            effectuerEchange(sel, pi, eid);
+          }
 
-            // Même équipe → désélection
-            if (selection.eid === eid && selection.pi === pi) {
-                selection.el.classList.remove("selected");
-                selection = null;
-                const hint = document.getElementById("edit-hint");
-                if (hint) hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-                return;
-            }
-
-            // Même poule ou deux exempts → changer la sélection
-            if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
-                selection.el.classList.remove("selected");
-                selection = { pi, eid, el };
-                el.classList.add("selected");
-                return;
-            }
-
-            // Cas exempt
-            const isExemptA = selection.eid === "exempt";
-            const isExemptB = eid === "exempt";
-
-            if (isExemptA && isExemptB) {
-                toast("Impossible d'échanger deux exempts", "error");
-                return;
-            }
-
-            const sel = selection;
-            el.classList.add("selected");
-
-            setTimeout(() => {
-                if (!sel) return;
-
-                if (isExemptA || isExemptB) {
-                    // logique transfert exempt — inchangée
-                    const nb_max_equipes = Math.max(...poulesActuelles.map(p => p.nb_max));
-                    const pA = poulesActuelles[sel.pi];
-                    const pB = poulesActuelles[pi];
-                    const sourcePoule = isExemptB ? pA : pB;
-                    const destPoule   = isExemptB ? pB : pA;
-                    const equipeId    = isExemptB ? sel.eid : eid;
-
-                    const idx      = sourcePoule.equipes.findIndex(e => e.id === equipeId);
-                    const equipeObj = sourcePoule.equipes[idx];
-
-                    if (nb_max_equipes === sourcePoule.nb_max) {
-                        if (!verifierClubDansPoule(destPoule, equipeObj)) {
-                            sourcePoule.equipes.splice(idx, 1);
-                            sourcePoule.distance_moyenne = calculerDistanceMoyenne(sourcePoule);
-                            sourcePoule.barycentre       = calculerBarycentre(sourcePoule.equipes);
-                            sourcePoule.nb_max--;
-                            destPoule.nb_max++;
-                            ajouterEquipeDansPoule(destPoule, equipeObj);
-                            finaliserStatistiquesPoules(poulesActuelles);
-                        } else {
-                            toast("Il existe déjà une équipe du même club dans la poule de destination", "error");
-                        }
-                    } else {
-                        toast("Pas plus d'un exempt dans une poule", "error");
-                    }
-                } else {
-                    // ← appel à la fonction commune
-                    effectuerEchange(sel, pi, eid);
-                }
-
-                selection = null;
-                afficherPoules();
-                highlightToutesLesPoules();
-            }, 120);
-        });
+          selection = null;
+          afficherPoules();
+          highlightToutesLesPoules();
+        }, 120);
+      });
     });
-}
+  }
 
-function attacherListenersMarqueurs() {
+  function attacherListenersMarqueurs() {
     markers.forEach((m) => {
-        m.off("click");
+      m.off("click");
 
-        m.on("click", (e) => {
-            L.DomEvent.stopPropagation(e);
+      m.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
 
-            const eid = m.equipeId;
-            const pi  = poulesActuelles.findIndex(p => p.equipes.some(eq => eq.id === eid));
-            if (pi === -1) return;
+        const eid = m.equipeId;
+        const pi = poulesActuelles.findIndex((p) =>
+          p.equipes.some((eq) => eq.id === eid),
+        );
+        if (pi === -1) return;
 
-            if (!selection) {
-                selection = { pi, eid, el: null };
-                m.setIcon(createPinIcon("#f59e0b", 1));
-                m.setZIndexOffset(2000);
-                const hint = document.getElementById("edit-hint");
-                if (hint) hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-                return;
-            }
+        if (!selection) {
+          selection = { pi, eid, el: null };
+          m.setIcon(createPinIcon("#f59e0b", 1));
+          m.setZIndexOffset(2000);
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
+          return;
+        }
 
-            // Même équipe → désélection
-            if (selection.eid === eid && selection.pi === pi) {
-                selection = null;
-                highlightToutesLesPoules();
-                const hint = document.getElementById("edit-hint");
-                if (hint) hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-                return;
-            }
+        // Même équipe → désélection
+        if (selection.eid === eid && selection.pi === pi) {
+          selection = null;
+          highlightToutesLesPoules();
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+          return;
+        }
 
-            // Même poule → changer la sélection
-            if (selection.pi === pi) {
-                highlightToutesLesPoules();
-                selection = { pi, eid, el: null };
-                m.setIcon(createPinIcon("#f59e0b", 1));
-                m.setZIndexOffset(2000);
-                return;
-            }
+        // Même poule → changer la sélection
+        if (selection.pi === pi) {
+          highlightToutesLesPoules();
+          selection = { pi, eid, el: null };
+          m.setIcon(createPinIcon("#f59e0b", 1));
+          m.setZIndexOffset(2000);
+          return;
+        }
 
-            // 2ème sélection → swap
-            const sel = selection;
+        // 2ème sélection → swap
+        const sel = selection;
 
-            setTimeout(() => {
-                if (!sel) return;
+        setTimeout(() => {
+          if (!sel) return;
 
-                // ← appel à la fonction commune
-                effectuerEchange(sel, pi, eid);
+          // ← appel à la fonction commune
+          effectuerEchange(sel, pi, eid);
 
-                selection = null;
-                afficherPoules();
-                highlightToutesLesPoules();
-                if (modeEdition) {
-                    attacherListenersEdition();
-                    attacherListenersMarqueurs();
-                }
-            }, 120);
-        });
+          selection = null;
+          afficherPoules();
+          highlightToutesLesPoules();
+          if (modeEdition) {
+            attacherListenersEdition();
+            attacherListenersMarqueurs();
+          }
+        }, 120);
+      });
     });
-}
+  }
 
   /*function attacherListenersEdition() {
     document.querySelectorAll(".pool-team-row").forEach((el) => {
@@ -893,7 +991,7 @@ function attacherListenersMarqueurs() {
       });
     });
   }*/
- /*[pA.equipes[iA], pB.equipes[iB]] = [
+  /*[pA.equipes[iA], pB.equipes[iB]] = [
                   pB.equipes[iB],
                   pA.equipes[iA],
                 ];*/
@@ -928,36 +1026,72 @@ function attacherListenersMarqueurs() {
     meta.textContent = `${totalEq} équipes · ${poulesActuelles.length} poules`;
 
     // Créer le bouton une seule fois
+    // Créer le bouton une seule fois
     if (btnEchange && !document.getElementById("btn-switch")) {
-      btnEchange.innerHTML = `<button id="btn-switch" class="btn-switch-style">Modifier les poules</button>`;
+      btnEchange.innerHTML = `
+        <button id="btn-switch" class="btn-switch-style" style="display: inline-flex; align-items: center; justify-content: center;">
+            <svg id="icon-swap" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
+            </svg>
+            <span>Modifier les poules</span>
+        </button>`;
+
       document.getElementById("btn-switch").addEventListener("click", () => {
-        //const p = JSON.parse(localStorage.getItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`));
-        //console.log(p);
         setModeEdition(!modeEdition);
       });
     }
 
-    // Reconstruction du DOM — les listeners précédents sont détruits avec les anciens éléments
     const nb_max_equipes = Math.max(...poulesActuelles.map((p) => p.nb_max));
+    const isModeNiveau = config.mode === "niveau";
+
     grid.innerHTML = poulesActuelles
       .map((poule, pi) => {
         const lettre = poule.nom || String.fromCharCode(65 + pi);
         const couleur = PALETTE[pi % PALETTE.length];
 
+        // Calcul du poids/difficulté de la poule si on est en mode "niveau"
+        let difficultePoule = 0;
+        if (isModeNiveau) {
+          difficultePoule = poule.equipes.reduce((acc, e) => {
+            const statut = (e.statut_niveau || "").toLowerCase();
+            if (statut.includes("+") || statut === "montante") return acc - 1;
+            if (statut.includes("-") || statut === "descendante")
+              return acc + 1;
+            return acc; // Maintien ou égal (=) vaut 0
+          }, 0);
+        }
+
         let lignes = poule.equipes
-          .map(
-            (e) => `
+          .map((e) => {
+            // Icône de statut de niveau
+            let iconStatut = "";
+            if (isModeNiveau) {
+              const statut = (e.statut_niveau || "").toLowerCase();
+              if (statut.includes("+") || statut === "montante") {
+                // Flèche vers le haut (vert)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+              } else if (statut.includes("-") || statut === "descendante") {
+                // Flèche vers le bas (rouge)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
+              } else {
+                // Maintien (tiret gris)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+              }
+            }
+
+            return `
                 <div class="pool-team-row${modeEdition ? " clickable" : ""}"
                      data-poule-index="${pi}"
                      data-equipe-id="${e.id}">
                     <span class="pool-team-dot" style="background:${couleur}"></span>
+                    ${iconStatut}
                     <span class="pool-team-name">
                       ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                     </span>
-                    <span class="pool-team-club">${e.distance_totale} Km</span>
+                    <span class="pool-team-club">${e.distance_totale ? e.distance_totale + " Km" : ""}</span>
                 </div>
-            `,
-          )
+            `;
+          })
           .join("");
 
         if (poule.equipes.length < nb_max_equipes) {
@@ -972,19 +1106,34 @@ function attacherListenersMarqueurs() {
         </div>`;
         }
 
-        //debugger;
+        // Gestion de l'en-tête selon le mode
+        let statsEnteteHtml = "";
+        if (isModeNiveau) {
+          const affichagePoids =
+            difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+          statsEnteteHtml = `
+                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+                    Poids de la poule : ${affichagePoids}
+                </div>
+             `;
+        } else {
+          statsEnteteHtml = `
+                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+                    Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
+                </div>
+                <div style="font-size:0.7rem; color:#888; font-weight:normal">
+                    σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
+                </div>
+             `;
+        }
+
         return `
             <div class="pool-card" data-poule-index="${pi}">
                 <div class="pool-card-head">
                     <span class="pool-dot" style="background:${couleur}"></span>
                     Poule ${lettre}
                     <div style="text-align:right; margin-left:auto">
-                        <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
-                            Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
-                        </div>
-                        <div style="font-size:0.7rem; color:#888; font-weight:normal">
-                            σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
-                        </div>
+                        ${statsEnteteHtml}
                     </div>
                 </div>
                 ${lignes}
@@ -1006,7 +1155,6 @@ function attacherListenersMarqueurs() {
       });
     }
   }
-
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
   renderStepper();
