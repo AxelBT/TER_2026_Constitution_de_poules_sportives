@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
-  
+
   function jitterCoords(lat, lng, index, total) {
     if (total <= 1) return [lat, lng];
     const angle = (2 * Math.PI * index) / total;
@@ -383,12 +383,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (equipesInconnues.length > 0) {
-    // Cache la carte
-    document.querySelector('.map-wrapper').style.display = 'none';
+      // Cache la carte
+      document.querySelector(".map-wrapper").style.display = "none";
 
-    // Affiche le message dans la zone principale
-    const poolsGrid = document.getElementById('pools-grid');
-    poolsGrid.innerHTML = `
+      // Affiche le message dans la zone principale
+      const poolsGrid = document.getElementById("pools-grid");
+      poolsGrid.innerHTML = `
         <div class="error-state">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
@@ -401,15 +401,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 ou ses coordonnées sont manquantes :
             </p>
             <ul class="error-state-list">
-                ${equipesInconnues.map(e => `<li>${e.nom}</li>`).join('')}
+                ${equipesInconnues.map((e) => `<li>${e.nom}</li>`).join("")}
             </ul>
             <p class="error-state-hint">
                 Vérifiez que ces clubs sont présents dans votre fichier CSV et qu'ils ont bien été géocodés.
             </p>
         </div>
     `;
-    visible = false;
-}
+      visible = false;
+    }
 
     panel.style.display = visible ? "flex" : "none";
   }
@@ -417,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
 
-  function highlightPoule(pouleIndex) {
+  /*function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
       //resetMarkers();
@@ -447,7 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.on("mouseout", function (e) {
           this.closePopup();
         });*/
-        m.bindTooltip(
+  /*m.bindTooltip(
           `<strong>${equipe.type === "CTC" ? equipe.ctc_nom : equipe.nom_club} ${equipe.numero}</strong><br>
      <span style="color:#888">${equipe.type === "CTC" ? "CTC " + equipe.ctc_num : "Club " + equipe.num_club}</span>`,
           {
@@ -472,6 +472,51 @@ document.addEventListener("DOMContentLoaded", () => {
         pBounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [60, 60], maxZoom: 10 },
       );
+  }*/
+  function highlightPoule(pouleIndex) {
+    // Reclic sur la même poule → reset
+    if (highlightPoule._actif === pouleIndex) {
+      highlightPoule._actif = null;
+      highlightToutesLesPoules();
+      // fermer tous les tooltips
+      markers.forEach((m) => m.closeTooltip());
+      document
+        .querySelectorAll(".pool-card")
+        .forEach((c) => c.classList.remove("pool-card--active"));
+      return;
+    }
+
+    highlightPoule._actif = pouleIndex;
+    const poule = poulesActuelles[pouleIndex];
+    const couleur = PALETTE[pouleIndex % PALETTE.length];
+    const idsPoule = new Set(poule.equipes.map((e) => e.id));
+
+    markers.forEach((m) => {
+      if (idsPoule.has(m.equipeId)) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+        m.openTooltip(); 
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.2));
+        m.setZIndexOffset(0);
+        m.closeTooltip(); 
+      }
+    });
+
+    document.querySelectorAll(".pool-card").forEach((card, i) => {
+      card.classList.toggle("pool-card--active", i === pouleIndex);
+    });
+
+    // Recentre sur les équipes de la poule
+    const pBounds = markers
+      .filter((m) => idsPoule.has(m.equipeId))
+      .map((m) => m.getLatLng());
+    if (pBounds.length) {
+      map.fitBounds(
+        pBounds.map((ll) => [ll.lat, ll.lng]),
+        { padding: [60, 60], maxZoom: 10 },
+      );
+    }
   }
 
   function highlightToutesLesPoules() {
@@ -491,9 +536,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
     highlightPoule._actif = null;
-    const bounds = markers.map(m => m.getLatLng());
+    const bounds = markers.map((m) => m.getLatLng());
     if (bounds.length) {
-        map.fitBounds(bounds.map(ll => [ll.lat, ll.lng]), { padding: [40, 40] });
+      map.fitBounds(
+        bounds.map((ll) => [ll.lat, ll.lng]),
+        { padding: [40, 40] },
+      );
     }
   }
 
@@ -534,208 +582,230 @@ document.addEventListener("DOMContentLoaded", () => {
         .forEach((c) => c.classList.remove("pool-card--active"));
       afficherPoules();
     } else {
-      markers.forEach(m => m.off("click"));
+      markers.forEach((m) => m.off("click"));
       highlightToutesLesPoules();
       afficherPoules();
     }
   }
 
   /**
- * Fonction commune — effectue le swap entre deux équipes
- * appelée par attacherListenersEdition et attacherListenersMarqueurs
- */
+   * Fonction commune — effectue le swap entre deux équipes
+   * appelée par attacherListenersEdition et attacherListenersMarqueurs
+   */
   function effectuerEchange(sel, pi, eid) {
-      const pA = poulesActuelles[sel.pi];
-      const pB = poulesActuelles[pi];
-      if (!pA || !pB) return;
+    const pA = poulesActuelles[sel.pi];
+    const pB = poulesActuelles[pi];
+    if (!pA || !pB) return;
 
-      const iA = pA.equipes.findIndex(e => e.id === sel.eid);
-      const iB = pB.equipes.findIndex(e => e.id === eid);
+    const iA = pA.equipes.findIndex((e) => e.id === sel.eid);
+    const iB = pB.equipes.findIndex((e) => e.id === eid);
 
-      if (iA === -1 || iB === -1) return;
+    if (iA === -1 || iB === -1) return;
 
-      if (
-          pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
-          (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
-          !verifierClubDansPoule(pB, pA.equipes[iA]))
-      ) {
-          [
-              poulesActuelles[sel.pi].equipes[iA],
-              poulesActuelles[pi].equipes[iB],
-          ] = [
-              poulesActuelles[pi].equipes[iB],
-              poulesActuelles[sel.pi].equipes[iA],
-          ];
+    if (
+      pA.equipes[iA].num_club === pB.equipes[iB].num_club ||
+      (!verifierClubDansPoule(pA, pB.equipes[iB]) &&
+        !verifierClubDansPoule(pB, pA.equipes[iA]))
+    ) {
+      [poulesActuelles[sel.pi].equipes[iA], poulesActuelles[pi].equipes[iB]] = [
+        poulesActuelles[pi].equipes[iB],
+        poulesActuelles[sel.pi].equipes[iA],
+      ];
 
-          poulesActuelles[sel.pi].distance_moyenne = calculerDistanceMoyenne(poulesActuelles[sel.pi]);
-          poulesActuelles[pi].distance_moyenne     = calculerDistanceMoyenne(poulesActuelles[pi]);
-          poulesActuelles[sel.pi].barycentre       = calculerBarycentre(poulesActuelles[sel.pi].equipes);
-          poulesActuelles[pi].barycentre           = calculerBarycentre(poulesActuelles[pi].equipes);
+      poulesActuelles[sel.pi].distance_moyenne = calculerDistanceMoyenne(
+        poulesActuelles[sel.pi],
+      );
+      poulesActuelles[pi].distance_moyenne = calculerDistanceMoyenne(
+        poulesActuelles[pi],
+      );
+      poulesActuelles[sel.pi].barycentre = calculerBarycentre(
+        poulesActuelles[sel.pi].equipes,
+      );
+      poulesActuelles[pi].barycentre = calculerBarycentre(
+        poulesActuelles[pi].equipes,
+      );
 
-          finaliserStatistiquesPoules(poulesActuelles);
+      finaliserStatistiquesPoules(poulesActuelles);
 
-          const hint = document.getElementById("edit-hint");
-          if (hint) {
-              hint.textContent = "✓ Échange effectué.";
-              setTimeout(() => {
-                  if (modeEdition)
-                      hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-              }, 2500);
-          }
-
-          return true; // échange réussi
-      } else {
-          toast("Une équipe de ce club appartient déjà à cette poule", "error");
-          return false; // échange refusé
+      const hint = document.getElementById("edit-hint");
+      if (hint) {
+        hint.textContent = "✓ Échange effectué.";
+        setTimeout(() => {
+          if (modeEdition)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+        }, 2500);
       }
+
+      return true; // échange réussi
+    } else {
+      toast("Une équipe de ce club appartient déjà à cette poule", "error");
+      return false; // échange refusé
+    }
   }
 
   function attacherListenersEdition() {
-      document.querySelectorAll(".pool-team-row").forEach((el) => {
-          el.addEventListener("click", (e) => {
-              e.stopPropagation();
+    document.querySelectorAll(".pool-team-row").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
 
-              const pi  = Number(el.dataset.pouleIndex);
-              const eid = el.dataset.equipeId;
-              if (isNaN(pi) || eid === undefined) return;
+        const pi = Number(el.dataset.pouleIndex);
+        const eid = el.dataset.equipeId;
+        if (isNaN(pi) || eid === undefined) return;
 
-              if (!selection) {
-                  selection = { pi, eid, el };
-                  el.classList.add("selected");
-                  const hint = document.getElementById("edit-hint");
-                  if (hint) hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-                  return;
+        if (!selection) {
+          selection = { pi, eid, el };
+          el.classList.add("selected");
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
+          return;
+        }
+
+        // Même équipe → désélection
+        if (selection.eid === eid && selection.pi === pi) {
+          selection.el.classList.remove("selected");
+          selection = null;
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+          return;
+        }
+
+        // Même poule ou deux exempts → changer la sélection
+        if (
+          selection.pi === pi ||
+          (selection.eid === "exempt" && eid === "exempt")
+        ) {
+          selection.el.classList.remove("selected");
+          selection = { pi, eid, el };
+          el.classList.add("selected");
+          return;
+        }
+
+        // Cas exempt
+        const isExemptA = selection.eid === "exempt";
+        const isExemptB = eid === "exempt";
+
+        if (isExemptA && isExemptB) {
+          toast("Impossible d'échanger deux exempts", "error");
+          return;
+        }
+
+        const sel = selection;
+        el.classList.add("selected");
+
+        setTimeout(() => {
+          if (!sel) return;
+
+          if (isExemptA || isExemptB) {
+            // logique transfert exempt — inchangée
+            const nb_max_equipes = Math.max(
+              ...poulesActuelles.map((p) => p.nb_max),
+            );
+            const pA = poulesActuelles[sel.pi];
+            const pB = poulesActuelles[pi];
+            const sourcePoule = isExemptB ? pA : pB;
+            const destPoule = isExemptB ? pB : pA;
+            const equipeId = isExemptB ? sel.eid : eid;
+
+            const idx = sourcePoule.equipes.findIndex((e) => e.id === equipeId);
+            const equipeObj = sourcePoule.equipes[idx];
+
+            if (nb_max_equipes === sourcePoule.nb_max) {
+              if (!verifierClubDansPoule(destPoule, equipeObj)) {
+                sourcePoule.equipes.splice(idx, 1);
+                sourcePoule.distance_moyenne =
+                  calculerDistanceMoyenne(sourcePoule);
+                sourcePoule.barycentre = calculerBarycentre(
+                  sourcePoule.equipes,
+                );
+                sourcePoule.nb_max--;
+                destPoule.nb_max++;
+                ajouterEquipeDansPoule(destPoule, equipeObj);
+                finaliserStatistiquesPoules(poulesActuelles);
+              } else {
+                toast(
+                  "Il existe déjà une équipe du même club dans la poule de destination",
+                  "error",
+                );
               }
+            } else {
+              toast("Pas plus d'un exempt dans une poule", "error");
+            }
+          } else {
+            // ← appel à la fonction commune
+            effectuerEchange(sel, pi, eid);
+          }
 
-              // Même équipe → désélection
-              if (selection.eid === eid && selection.pi === pi) {
-                  selection.el.classList.remove("selected");
-                  selection = null;
-                  const hint = document.getElementById("edit-hint");
-                  if (hint) hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-                  return;
-              }
-
-              // Même poule ou deux exempts → changer la sélection
-              if (selection.pi === pi || (selection.eid === "exempt" && eid === "exempt")) {
-                  selection.el.classList.remove("selected");
-                  selection = { pi, eid, el };
-                  el.classList.add("selected");
-                  return;
-              }
-
-              // Cas exempt
-              const isExemptA = selection.eid === "exempt";
-              const isExemptB = eid === "exempt";
-
-              if (isExemptA && isExemptB) {
-                  toast("Impossible d'échanger deux exempts", "error");
-                  return;
-              }
-
-              const sel = selection;
-              el.classList.add("selected");
-
-              setTimeout(() => {
-                  if (!sel) return;
-
-                  if (isExemptA || isExemptB) {
-                      // logique transfert exempt — inchangée
-                      const nb_max_equipes = Math.max(...poulesActuelles.map(p => p.nb_max));
-                      const pA = poulesActuelles[sel.pi];
-                      const pB = poulesActuelles[pi];
-                      const sourcePoule = isExemptB ? pA : pB;
-                      const destPoule   = isExemptB ? pB : pA;
-                      const equipeId    = isExemptB ? sel.eid : eid;
-
-                      const idx      = sourcePoule.equipes.findIndex(e => e.id === equipeId);
-                      const equipeObj = sourcePoule.equipes[idx];
-
-                      if (nb_max_equipes === sourcePoule.nb_max) {
-                          if (!verifierClubDansPoule(destPoule, equipeObj)) {
-                              sourcePoule.equipes.splice(idx, 1);
-                              sourcePoule.distance_moyenne = calculerDistanceMoyenne(sourcePoule);
-                              sourcePoule.barycentre       = calculerBarycentre(sourcePoule.equipes);
-                              sourcePoule.nb_max--;
-                              destPoule.nb_max++;
-                              ajouterEquipeDansPoule(destPoule, equipeObj);
-                              finaliserStatistiquesPoules(poulesActuelles);
-                          } else {
-                              toast("Il existe déjà une équipe du même club dans la poule de destination", "error");
-                          }
-                      } else {
-                          toast("Pas plus d'un exempt dans une poule", "error");
-                      }
-                  } else {
-                      // ← appel à la fonction commune
-                      effectuerEchange(sel, pi, eid);
-                  }
-
-                  selection = null;
-                  afficherPoules();
-                  highlightToutesLesPoules();
-              }, 120);
-          });
+          selection = null;
+          afficherPoules();
+          highlightToutesLesPoules();
+        }, 120);
       });
+    });
   }
 
   function attacherListenersMarqueurs() {
-      markers.forEach((m) => {
-          m.off("click");
+    markers.forEach((m) => {
+      m.off("click");
 
-          m.on("click", (e) => {
-              L.DomEvent.stopPropagation(e);
+      m.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
 
-              const eid = m.equipeId;
-              const pi  = poulesActuelles.findIndex(p => p.equipes.some(eq => eq.id === eid));
-              if (pi === -1) return;
+        const eid = m.equipeId;
+        const pi = poulesActuelles.findIndex((p) =>
+          p.equipes.some((eq) => eq.id === eid),
+        );
+        if (pi === -1) return;
 
-              if (!selection) {
-                  selection = { pi, eid, el: null };
-                  m.setIcon(createPinIcon("#f59e0b", 1));
-                  m.setZIndexOffset(2000);
-                  const hint = document.getElementById("edit-hint");
-                  if (hint) hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
-                  return;
-              }
+        if (!selection) {
+          selection = { pi, eid, el: null };
+          m.setIcon(createPinIcon("#f59e0b", 1));
+          m.setZIndexOffset(2000);
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Maintenant cliquez sur l'équipe à échanger.";
+          return;
+        }
 
-              // Même équipe → désélection
-              if (selection.eid === eid && selection.pi === pi) {
-                  selection = null;
-                  highlightToutesLesPoules();
-                  const hint = document.getElementById("edit-hint");
-                  if (hint) hint.textContent = "Cliquez sur deux équipes pour les échanger.";
-                  return;
-              }
+        // Même équipe → désélection
+        if (selection.eid === eid && selection.pi === pi) {
+          selection = null;
+          highlightToutesLesPoules();
+          const hint = document.getElementById("edit-hint");
+          if (hint)
+            hint.textContent = "Cliquez sur deux équipes pour les échanger.";
+          return;
+        }
 
-              // Même poule → changer la sélection
-              if (selection.pi === pi) {
-                  highlightToutesLesPoules();
-                  selection = { pi, eid, el: null };
-                  m.setIcon(createPinIcon("#f59e0b", 1));
-                  m.setZIndexOffset(2000);
-                  return;
-              }
+        // Même poule → changer la sélection
+        if (selection.pi === pi) {
+          highlightToutesLesPoules();
+          selection = { pi, eid, el: null };
+          m.setIcon(createPinIcon("#f59e0b", 1));
+          m.setZIndexOffset(2000);
+          return;
+        }
 
-              // 2ème sélection → swap
-              const sel = selection;
+        // 2ème sélection → swap
+        const sel = selection;
 
-              setTimeout(() => {
-                  if (!sel) return;
+        setTimeout(() => {
+          if (!sel) return;
 
-                  // ← appel à la fonction commune
-                  effectuerEchange(sel, pi, eid);
+          // ← appel à la fonction commune
+          effectuerEchange(sel, pi, eid);
 
-                  selection = null;
-                  afficherPoules();
-                  highlightToutesLesPoules();
-                  if (modeEdition) {
-                      attacherListenersEdition();
-                      attacherListenersMarqueurs();
-                  }
-              }, 120);
-          });
+          selection = null;
+          afficherPoules();
+          highlightToutesLesPoules();
+          if (modeEdition) {
+            attacherListenersEdition();
+            attacherListenersMarqueurs();
+          }
+        }, 120);
       });
+    });
   }
 
   /*function attacherListenersEdition() {
@@ -893,7 +963,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }*/
- /*[pA.equipes[iA], pB.equipes[iB]] = [
+  /*[pA.equipes[iA], pB.equipes[iB]] = [
                   pB.equipes[iB],
                   pA.equipes[iA],
                 ];*/
@@ -954,7 +1024,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span class="pool-team-name">
                       ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                     </span>
-                    <span class="pool-team-club">${e.distance_totale} Km</span>
+                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} Km</span>
                 </div>
             `,
           )
