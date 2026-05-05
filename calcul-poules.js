@@ -41,25 +41,24 @@ function verifierCoherenceCTC(data, ctcNum, ctcNom) {
   return existant.ctc_nom.toLowerCase() === ctcNom.toLowerCase();
 }
 
-
 function determinerType(typeBrut) {
-    const t = typeBrut.toLowerCase();
+  const t = typeBrut.toLowerCase();
 
-    // cas CLUB
-    if (t === "club") {
-        return "Club";
-    }
+  // cas CLUB
+  if (t === "club") {
+    return "Club";
+  }
 
-    // cas CTC (formes acceptées)
-    if (
-        t === "ctc" ||
-        t === "coopération territoriale club" ||
-        t === "cooperation territoriale club"
-    ) {
-        return "CTC";
-    }
+  // cas CTC (formes acceptées)
+  if (
+    t === "ctc" ||
+    t === "coopération territoriale club" ||
+    t === "cooperation territoriale club"
+  ) {
+    return "CTC";
+  }
 
-    return null; // inconnu
+  return null; // inconnu
 }
 
 export async function traiterCSV(contenu) {
@@ -112,13 +111,12 @@ export async function traiterCSV(contenu) {
     const numEquipeRaw = parseInt(colonnes[idx.equipe_num]?.trim());
     const statut = colonnes[idx.statut_niveau]?.trim();
 
-
     const verifier_type = determinerType(type);
-    if(!verifier_type){
-        toast(`Type inconnu ligne ${i+1} : "${type}"`, "error");
-    return { succes: false, tableau: [] };
+    if (!verifier_type) {
+      toast(`Type inconnu ligne ${i + 1} : "${type}"`, "error");
+      return { succes: false, tableau: [] };
     }
-    const estCTC = verifier_type  === "CTC";
+    const estCTC = verifier_type === "CTC";
 
     // on vérifie si toutes les infos d'une équipe sont fournies
     let champManquant = !numClub || !nomClub || isNaN(numEquipeRaw) || !type;
@@ -194,7 +192,6 @@ export async function traiterCSV(contenu) {
   }
 
   if (equipesInconnues.length > 0) {
-    toast("Impossible de générer", "error");
     return { succes: false, tableau: equipesInconnues };
   }
 
@@ -328,6 +325,8 @@ export function verifierClubDansPoule(poule, equipe) {
   });
 }
 
+// Critère 1 — Barycentre le plus proche
+// Choisir la poule dont le barycentre est géographiquement le plus proche de l'équipe.
 function choisirMeilleurePoule(poules, equipe) {
   let meilleure = null;
   let minDist = Infinity;
@@ -349,6 +348,61 @@ function choisirMeilleurePoule(poules, equipe) {
 
   return meilleure;
 }
+
+// Critère 2 — Distance moyenne minimale après ajout
+// Choisir la poule dont la distance moyenne est minimale après ajout simulé de l'équipe.
+/*function choisirMeilleurePoule(poules, equipe) {
+    let meilleure   = null;
+    let minDistMoy  = Infinity;
+
+    for (const p of poules) {
+        if (p.equipes.length >= p.nb_max) continue;
+        if (verifierClubDansPoule(p, equipe)) continue;
+
+        // Approche 2 — simulation de l'ajout
+        const distMoySimulee = calculerDistanceMoyenne({
+            equipes: [...p.equipes, equipe]
+        });
+
+        if (distMoySimulee < minDistMoy) {
+            minDistMoy = distMoySimulee;
+            meilleure  = p;
+        }
+    }
+
+    return meilleure;
+}*/
+
+// Critère 3 — Augmentation minimale de la distance moyenne
+// Choisir la poule dont l'ajout de l'équipe dégrade le moins la cohésion géographique.
+/*function choisirMeilleurePoule(poules, equipe) {
+    let meilleure       = null;
+    let minAugmentation = Infinity;
+
+    for (const p of poules) {
+        if (p.equipes.length >= p.nb_max) continue;
+        if (verifierClubDansPoule(p, equipe)) continue;
+
+        // Distance moyenne actuelle de la poule
+        const distAvant = p.distance_moyenne;
+
+        // Distance moyenne simulée après ajout de l'équipe
+        const distApres = calculerDistanceMoyenne({
+            equipes: [...p.equipes, equipe]
+        });
+
+        // Augmentation de la distance moyenne
+        const augmentation = distApres - distAvant;
+
+        if (augmentation < minAugmentation) {
+            minAugmentation = augmentation;
+            meilleure       = p;
+        }
+    }
+
+    return meilleure;
+}*/
+
 
 export function ajouterEquipeDansPoule(poule, equipe) {
   poule.equipes.push(equipe);
@@ -408,13 +462,43 @@ function tenterSauvetage(poules, equipe) {
 export function verifierSaturationClub(equipes, nb_poules) {
   const count = {};
 
+  for (const e of equipes) {
+    count[e.num_club] = (count[e.num_club] || 0) + 1;
+    if (e.type === "CTC") count[e.ctc_num] = (count[e.ctc_num] || 0) + 1;
+  }
+  for (const e of equipes) {
+    if (count[e.num_club] > nb_poules) {
+      return {
+        ok: false,
+        nomClub: e.nom_club,
+        numClub: e.num_club,
+        nbEquipes: count[e.num_club],
+      };
+    } else if (e.type === "CTC") {
+      if (count[e.ctc_num] > nb_poules) {
+        return {
+          ok: false,
+          nomClub: e.ctc_nom,
+          numClub: e.ctc_num,
+          nbEquipes: count[e.ctc_num],
+        };
+      }
+    }
+  }
+
+  return { ok: true };
+}
+
+/*function verifierSaturationClub(equipes) {
+  const count = {};
+
   equipes.forEach((e) => {
     count[e.num_club] = (count[e.num_club] || 0) + 1;
   });
 
   const max = Math.max(...Object.values(count));
-  return max <= nb_poules;
-}
+  return max ;
+}*/
 
 /*function equilibrerDistancesMoyennes(poules) {
   let iterations = 0;
@@ -495,7 +579,6 @@ function calculerEcartGlobal(poules) {
   return Math.max(...distances) - Math.min(...distances);
 }*/
 
-
 function equilibrerDistancesMoyennes(poules) {
   let iterations = 0;
   const MAX_ITERATIONS = 100;
@@ -520,8 +603,8 @@ function equilibrerDistancesMoyennes(poules) {
             const pBSans = pB.equipes.filter((_, idx) => idx !== j);
 
             // contrainte club
-            if (pASans.some(e => e.num_club === eB.num_club)) continue;
-            if (pBSans.some(e => e.num_club === eA.num_club)) continue;
+            if (pASans.some((e) => e.num_club === eB.num_club)) continue;
+            if (pBSans.some((e) => e.num_club === eA.num_club)) continue;
 
             const ancienneDistA = pA.distance_moyenne;
             const ancienneDistB = pB.distance_moyenne;
@@ -536,8 +619,7 @@ function equilibrerDistancesMoyennes(poules) {
 
             //  gain global (ce que TU veux)
             const gain =
-              (ancienneDistA + ancienneDistB) -
-              (nouvelleDistA + nouvelleDistB);
+              ancienneDistA + ancienneDistB - (nouvelleDistA + nouvelleDistB);
 
             if (gain > meilleurGain) {
               meilleurGain = gain;
@@ -611,7 +693,7 @@ export function finaliserStatistiquesPoules(poules) {
   });
 }
 
-export function generer_poules(equipes, nb_poules, nb_max) {
+export function generer_poules(equipes, nb_poules) {
   const nb_equipes = equipes.length;
 
   const barycentre = calculerBarycentre(equipes);
@@ -648,7 +730,6 @@ export function generer_poules(equipes, nb_poules, nb_max) {
   console.log("Poules générées :", poules);
   return poules;
 }
-
 
 /*function verifierCTCClubPorteur(data, ctcNum, numClub) {
   const existant = data.find((e) => e.type === "CTC" && e.ctc_num === ctcNum);
