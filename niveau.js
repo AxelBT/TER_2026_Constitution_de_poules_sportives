@@ -19,7 +19,7 @@ let equipesActuelles = [];
 let selection = null;
 
 // ── Fabrique une icône pin SVG colorée ──────────────────────────────────────
-function createPinIcon(color = "#888780", opacity = 1) {
+function createPinIcon(color = "#888780", opacity = 0.5) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
       <path fill="${color}" fill-opacity="${opacity}" stroke="#fff" stroke-width="2"
@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (config.niveauActuel < config.niveaux) {
       config.niveauActuel++;
       localStorage.setItem("championnatConfig", JSON.stringify(config));
-      window.location.href = buildURL(config.niveauActuel );
+      window.location.href = buildURL(config.niveauActuel);
     } else {
       window.location.href =
         "recapitulatif.html?" +
@@ -200,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
           categorie: config.categorie,
           niveaux: config.niveaux,
           genre: config.genre,
+          mode: config.mode,
         }).toString();
     }
   });
@@ -369,10 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (bounds.length) {
-      map.fitBounds(bounds, { padding: [40, 40], animate: false });
-      map.once("moveend", () => {
-        map.panBy([0, -38], { animate: false }); // 30px vers le bas — ajuste selon tes tests
-      });
+      map.fitBounds(bounds, { padding: [40, 40] });
     }
   }
 
@@ -536,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         );
       } else {
-        m.setIcon(createPinIcon("#888780", 0.25));
+        m.setIcon(createPinIcon());
         m.setZIndexOffset(0);
       }
     });
@@ -549,9 +547,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pBounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [40, 40], maxZoom: 10 },
       );
-      map.once("moveend", () => {
-        map.panBy([0, -38]);
-      });
     }
   }
   /*function highlightPoule(pouleIndex) {
@@ -612,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.setIcon(createPinIcon(couleur, 1));
         m.setZIndexOffset(1000);
       } else {
-        m.setIcon(createPinIcon("#888780", 0.25));
+        m.setIcon(createPinIcon());
         m.setZIndexOffset(0);
       }
     });
@@ -623,15 +618,12 @@ document.addEventListener("DOMContentLoaded", () => {
         bounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [40, 40] },
       );
-      map.once("moveend", () => {
-        map.panBy([0, -38]);
-      });
     }
   }
 
   function resetMarkers() {
     markers.forEach((m) => {
-      m.setIcon(createPinIcon("#888780", 1));
+      m.setIcon(createPinIcon("#888780"));
       m.setZIndexOffset(0);
     });
   }
@@ -1005,9 +997,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let lignes = poule.equipes
           .map((e) => {
             const statut = (e.statut_niveau || "").toLowerCase();
-
-            // En mode niveau : icône statut à taille fixe (flex-shrink:0) à la place du dot
-            // En mode normal : dot coloré classique
             let prefixeHtml = "";
             if (isModeNiveau) {
               let svgPath = "";
@@ -1039,10 +1028,10 @@ document.addEventListener("DOMContentLoaded", () => {
                      data-equipe-id="${e.id}"
                      style="display:flex; align-items:center;">
                     ${prefixeHtml}
-                    <span class="pool-team-name" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <span class="pool-team-name" >
                       ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                     </span>
-                    <span class="pool-team-club" style="flex-shrink:0; margin-left:8px;">
+                    <span class="pool-team-club">
                       ${parseFloat(e.distance_totale || 0).toFixed(0)} Km
                     </span>
                 </div>
@@ -1063,7 +1052,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // En-tête : toujours distance moyenne + poids (tous modes)
-        const affichagePoids = difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+        const affichagePoids =
+          difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
         const statsEnteteHtml = `
           <div style="text-align:right; line-height:1.4;">
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
@@ -1072,40 +1062,21 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="font-size:0.7rem; color:#888; font-weight:normal">
               σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} km
             </div>
-            ${isModeNiveau ? `
+            ${
+              isModeNiveau
+                ? `
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
               Poids : ${affichagePoids}
-            </div>` : ""}
+            </div>`
+                : ""
+            }
           </div>`;
-
-        /*return `
+        return `
     <div class="pool-card" data-poule-index="${pi}">
         <div class="pool-card-head">
             <span class="pool-dot" style="background:${couleur}"></span>
             Poule ${lettre}
-            <button
-                class="pool-card-map-btn ${modeEdition ? "hidden" : ""}"
-                data-poule-index="${pi}"
-                title="Voir sur la carte">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                </svg>
-            </button>
-            <div style="text-align:right; margin-left:auto;">
-                ${statsEnteteHtml}
-            </div>
-        </div>
-        ${lignes}
-    </div>`;*/
-    return `
-    <div class="pool-card" data-poule-index="${pi}">
-        <div class="pool-card-head">
-            <span class="pool-dot" style="background:${couleur}"></span>
-            Poule ${lettre}
-            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="display:none"' : ''}>
+            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="visibility:hidden"' : ''}>
                 voir sur carte
             </span>
             <div style="text-align:right;">
@@ -1217,6 +1188,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });*/
+
+/*return `
+    <div class="pool-card" data-poule-index="${pi}">
+        <div class="pool-card-head">
+            <span class="pool-dot" style="background:${couleur}"></span>
+            Poule ${lettre}
+            <button
+                class="pool-card-map-btn ${modeEdition ? "hidden" : ""}"
+                data-poule-index="${pi}"
+                title="Voir sur la carte">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+            </button>
+            <div style="text-align:right; margin-left:auto;">
+                ${statsEnteteHtml}
+            </div>
+        </div>
+        ${lignes}
+    </div>`;*/
 
 /*function attacherListenersEdition() {
     document.querySelectorAll(".pool-team-row").forEach((el) => {

@@ -389,6 +389,7 @@ body {
     border-radius: var(--radius-md);
     overflow: hidden;
     transition: border-color .2s, box-shadow .2s;
+    cursor: default;
 }
 .pool-card:hover {
     border-color: var(--clr-surface-300);
