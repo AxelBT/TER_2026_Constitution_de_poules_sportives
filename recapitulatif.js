@@ -1,13 +1,8 @@
 import { distance } from "./calcul-poules.js";
 import { toast } from "./toast.js";
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const config = {
-    categorie: params.get("categorie") || "senior",
-    niveaux: parseInt(params.get("niveaux")) || 1,
-    genre: params.get("genre") || "masculin",
-  };
-
+  const config = JSON.parse(localStorage.getItem("championnatConfig"));
+  
   const PALETTE = [
     "#0abbef",
     "#2563eb",
@@ -114,27 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             </div>
         `;
-  }
-
-  function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
-    const container = document.getElementById("niveau-selector");
-    container.innerHTML = niveauxData
-      .map(({ niveau, poules }) => {
-        const nbEq = poules.reduce((s, p) => s + p.equipes.length, 0);
-        return `
-            <div class="niveau-selector-item ${niveau === niveauActif ? "active" : ""}"
-                 data-niveau="${niveau}">
-                Niveau ${niveau}
-                <span class="ns-badge">${poules.length} poules · ${nbEq} éq.</span>
-            </div>`;
-      })
-      .join("");
-
-    container.querySelectorAll(".niveau-selector-item").forEach((el) => {
-      el.addEventListener("click", () => {
-        onSelect(parseInt(el.dataset.niveau));
-      });
-    });
   }
 
   function renderTabs(niveauxData, niveauActif, onSelect) {
@@ -311,8 +285,83 @@ document.addEventListener("DOMContentLoaded", () => {
       XLSX.utils.book_append_sheet(wb, ws, nomFeuille);
     });
 
-    // Feuille récap globale
-    const recapRows = [
+    // Téléchargement
+    const nomFichier = `poules_${config.categorie}_${config.genre}.xlsx`;
+    XLSX.writeFile(wb, nomFichier);
+    toast("Fichier Excel exporté avec succès.", "success");
+  }
+
+  document.getElementById("btn-prev").addEventListener("click", () => {
+    window.location.href =
+      `niveau.html?` +
+      new URLSearchParams({
+        categorie: config.categorie,
+        niveaux: config.niveaux,
+        genre: config.genre,
+        niveauActuel: config.niveaux,
+        mode: config.mode,
+      }).toString();
+  });
+
+  //initialisation
+  renderStepper();
+
+  const niveauxData = chargerToutesLesPoules();
+
+  if (!niveauxData.length) {
+    document.getElementById("recap-content").innerHTML = `
+        <div class="niveau-bloc">
+            <div class="pools-grid">
+                <div class="recap-empty">
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <p>Aucune poule générée. Retournez aux niveaux pour générer les poules.</p>
+                </div>
+            </div>
+        </div>`;
+    toast("Aucune poule trouvée dans la session.", "warn");
+    return;
+  }
+
+  let niveauActif = niveauxData[0].niveau;
+
+  function selectionnerNiveau(n) {
+    niveauActif = n;
+    const data = niveauxData.find((d) => d.niveau === n);
+    if (!data) return;
+
+    renderTabs(niveauxData, niveauActif, selectionnerNiveau);
+    //renderSelectorSidebar(niveauxData, niveauActif, selectionnerNiveau);
+    afficherNiveau(data);
+  }
+
+  const stats = calculerStatsGlobales(niveauxData);
+  afficherStatsGlobales(stats);
+
+  selectionnerNiveau(niveauActif);
+
+  document.getElementById("btn-export").addEventListener("click", () => {
+    exporterExcel(niveauxData);
+  });
+
+  const niveauxManquants = [];
+  for (let n = 1; n <= config.niveaux; n++) {
+    if (!niveauxData.find((d) => d.niveau === n)) niveauxManquants.push(n);
+  }
+  if (niveauxManquants.length) {
+    toast(
+      `Niveaux sans poules : ${niveauxManquants.map((n) => `Niveau ${n}`).join(", ")}`,
+      "warn",
+    );
+  }
+});
+
+// Feuille récap globale
+    /*const recapRows = [
       [`Récapitulatif — ${config.categorie.toUpperCase()} ${config.genre}`],
       [],
       [
@@ -353,81 +402,28 @@ document.addEventListener("DOMContentLoaded", () => {
       { wch: 16 },
       { wch: 12 },
     ];
-    XLSX.utils.book_append_sheet(wb, wsRecap, "Récapitulatif");
+    XLSX.utils.book_append_sheet(wb, wsRecap, "Récapitulatif");*/
 
-    // Téléchargement
-    const nomFichier = `poules_${config.categorie}_${config.genre}.xlsx`;
-    XLSX.writeFile(wb, nomFichier);
-    toast("Fichier Excel exporté avec succès.", "success");
-  }
+  /*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
+    const container = document.getElementById("niveau-selector");
+    container.innerHTML = niveauxData
+      .map(({ niveau, poules }) => {
+        const nbEq = poules.reduce((s, p) => s + p.equipes.length, 0);
+        return `
+            <div class="niveau-selector-item ${niveau === niveauActif ? "active" : ""}"
+                 data-niveau="${niveau}">
+                Niveau ${niveau}
+                <span class="ns-badge">${poules.length} poules · ${nbEq} éq.</span>
+            </div>`;
+      })
+      .join("");
 
-  document.getElementById("btn-prev").addEventListener("click", () => {
-    window.location.href =
-      `niveau.html?` +
-      new URLSearchParams({
-        categorie: config.categorie,
-        niveaux: config.niveaux,
-        genre: config.genre,
-        niveauActuel: config.niveaux,
-      }).toString();
-  });
-
-  //initialisation
-  renderStepper();
-
-  const niveauxData = chargerToutesLesPoules();
-
-  if (!niveauxData.length) {
-    document.getElementById("recap-content").innerHTML = `
-        <div class="niveau-bloc">
-            <div class="pools-grid">
-                <div class="recap-empty">
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                    <p>Aucune poule générée. Retournez aux niveaux pour générer les poules.</p>
-                </div>
-            </div>
-        </div>`;
-    toast("Aucune poule trouvée dans la session.", "warn");
-    return;
-  }
-
-  let niveauActif = niveauxData[0].niveau;
-
-  function selectionnerNiveau(n) {
-    niveauActif = n;
-    const data = niveauxData.find((d) => d.niveau === n);
-    if (!data) return;
-
-    renderTabs(niveauxData, niveauActif, selectionnerNiveau);
-    renderSelectorSidebar(niveauxData, niveauActif, selectionnerNiveau);
-    afficherNiveau(data);
-  }
-
-  const stats = calculerStatsGlobales(niveauxData);
-  afficherStatsGlobales(stats);
-
-  selectionnerNiveau(niveauActif);
-
-  document.getElementById("btn-export").addEventListener("click", () => {
-    exporterExcel(niveauxData);
-  });
-
-  const niveauxManquants = [];
-  for (let n = 1; n <= config.niveaux; n++) {
-    if (!niveauxData.find((d) => d.niveau === n)) niveauxManquants.push(n);
-  }
-  if (niveauxManquants.length) {
-    toast(
-      `Niveaux sans poules : ${niveauxManquants.map((n) => `Niveau ${n}`).join(", ")}`,
-      "warn",
-    );
-  }
-});
+    container.querySelectorAll(".niveau-selector-item").forEach((el) => {
+      el.addEventListener("click", () => {
+        onSelect(parseInt(el.dataset.niveau));
+      });
+    });
+  }*/
 
 /*function afficherNiveau(niveauData) {
         const { niveau, poules } = niveauData;
