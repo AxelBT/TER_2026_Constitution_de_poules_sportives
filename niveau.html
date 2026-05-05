@@ -1,207 +1,362 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Configuration des niveaux</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="niveau.css">
-</head>
-<body>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="niveau.css" />
+  </head>
+  <body>
+    <!-- ── TOAST ── -->
+    <div class="toast-container" id="toast-container"></div>
 
-<!-- ── TOAST ── -->
-<div class="toast-container" id="toast-container"></div>
-
-<!-- ── TOPBAR ── -->
-<header class="topbar">
-    <div class="topbar-inner">
+    <!-- ── TOPBAR ── -->
+    <header class="topbar">
+      <div class="topbar-inner">
         <span class="topbar-brand">Championnat</span>
         <nav class="topbar-stepper" id="stepper" aria-label="Étapes"></nav>
-    </div>
-</header>
+      </div>
+    </header>
 
-<!-- ── DASHBOARD ── -->
-<div class="dashboard">
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-
+    <!-- ── DASHBOARD ── -->
+    <div class="dashboard">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
         <!-- Panneau principal : titre + drop zone + params + générer -->
         <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title" id="titre-niveau">Niveau 1</span>
-                <span class="badge" id="badge-niveau">1 / 1</span>
+          <div class="panel-header">
+            <span class="panel-title" id="titre-niveau">Niveau 1</span>
+            <span class="badge" id="badge-niveau">1 / 1</span>
+          </div>
+          <div class="panel-body">
+            <!-- Drop zone équipes -->
+            <label
+              style="
+                font-size: 0.73rem;
+                font-weight: 700;
+                margin-bottom: var(--space-xs);
+                display: block;
+                color: var(--clr-surface-800);
+              "
+            >
+              Équipes
+              <span
+                style="
+                  font-weight: 400;
+                  color: var(--clr-surface-400);
+                  font-size: 0.7rem;
+                "
+                >(CSV : nom_equipe,nom_club)</span
+              >
+            </label>
+            <div class="drop-zone-sm" id="drop-zone-equipes">
+              <input type="file" id="file_csv_niveau" accept=".csv" />
+              <div class="drop-zone-sm-content" id="drop-label">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                  />
+                  <polyline points="14 2 14 8 20 8" />
+                  <path d="M12 18v-6" />
+                  <path d="m9 15 3-3 3 3" />
+                </svg>
+                <p id="file-label">
+                  Glissez votre fichier ici ou <strong>parcourez</strong>
+                </p>
+              </div>
             </div>
-            <div class="panel-body">
 
-                <!-- Drop zone équipes -->
-                <label style="font-size:.73rem;font-weight:700;margin-bottom:var(--space-xs);display:block;color:var(--clr-surface-800)">
-                    Équipes
-                    <span style="font-weight:400;color:var(--clr-surface-400);font-size:.7rem">(CSV : nom_equipe,nom_club)</span>
-                </label>
-                <div class="drop-zone-sm" id="drop-zone-equipes">
-                    <input type="file" id="file_csv_niveau" accept=".csv">
-                    <div class="drop-zone-sm-content" id="drop-label">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/>
-                        </svg>
-                         <p id="file-label">Glissez votre fichier ici ou <strong>parcourez</strong></p>
-                    </div>
-                </div>
-
-                <!-- Paramètres -->
-                <div class="inline-fields">
-                    <div>
-                        <label for="nb_poules">Nb. poules</label>
-                        <input type="number" id="nb_poules" min="1" max="20" value="8">
-                    </div>
-                    <div>
-                        <label for="nb_max_equipes">Max / poule</label>
-                        <input type="number" id="nb_max_equipes" min="3" max="40" value="5">
-                    </div>
-                </div>
-
-                <!-- Boutons générer -->
-                <div class="btn-generate-row">
-                    
-                    <button id="btn-generer" class="btn-generate btn-generate--half btn-generate--alt">
-                        Générer les poules
-                    </button>
-                </div>
+            <!-- Paramètres -->
+            <div class="inline-fields">
+              <div>
+                <label for="nb_poules">Nb. poules</label>
+                <input
+                  type="number"
+                  id="nb_poules"
+                  min="1"
+                  max="20"
+                  value="8"
+                />
+              </div>
+              <div>
+                <label for="nb_max_equipes">Max / poule</label>
+                <input
+                  type="number"
+                  id="nb_max_equipes"
+                  min="3"
+                  max="40"
+                  value="5"
+                />
+              </div>
             </div>
+
+            <!-- Boutons générer -->
+            <div class="btn-generate-row">
+              <button
+                id="btn-generer"
+                class="btn-generate btn-generate--half btn-generate--alt"
+              >
+                Générer les poules
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Statistiques -->
-        <div class="panel" id="panel-stats" style="display:none">
-            <div class="panel-header">
-                <span class="panel-title">Statistiques</span>
-            </div>
-            <div class="panel-body">
-                <div class="stats-grid" id="stats-content"></div>
-            </div>
+        <div class="panel" id="panel-stats" style="display: none">
+          <div class="panel-header">
+            <span class="panel-title">Statistiques</span>
+          </div>
+          <div class="panel-body">
+            <div class="stats-grid" id="stats-content"></div>
+          </div>
         </div>
 
         <!-- Navigation -->
         <div class="nav-row">
-            <button class="btn-nav-prev" id="btn-prev">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                Retour
-            </button>
-            <button class="btn-nav-next" id="btn-next">
-                Suivant
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </button>
+          <button class="btn-nav-prev" id="btn-prev">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
+            Retour
+          </button>
+          <button class="btn-nav-next" id="btn-next">
+            Suivant
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </button>
         </div>
 
         <!-- Section erreurs -->
-<div class="errors-panel" id="errors-panel" style="display:none">
+        <div class="errors-panel" id="errors-panel" style="display: none">
+          <!-- Clubs non géocodés -->
+          <div class="error-block" id="block-geocodage" style="display: none">
+            <div class="error-block-header">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"
+                />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span class="error-block-title">Clubs sans coordonnées</span>
+              <span class="error-count" id="count-geocodage"></span>
+            </div>
+            <ul class="error-list" id="list-geocodage"></ul>
+          </div>
 
-    <!-- Clubs non géocodés -->
-    <div class="error-block" id="block-geocodage" style="display:none">
-        <div class="error-block-header">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
-                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <span class="error-block-title">Clubs sans coordonnées</span>
-            <span class="error-count" id="count-geocodage"></span>
+          <!-- Équipes non placées -->
+          <div class="error-block" id="block-equipes" style="display: none">
+            <div class="error-block-header">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span class="error-block-title">Équipes non placées</span>
+              <span class="error-count" id="count-equipes"></span>
+            </div>
+            <ul class="error-list" id="list-equipes"></ul>
+          </div>
         </div>
-        <ul class="error-list" id="list-geocodage"></ul>
-    </div>
+      </aside>
 
-    <!-- Équipes non placées -->
-    <div class="error-block" id="block-equipes" style="display:none">
-        <div class="error-block-header">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <span class="error-block-title">Équipes non placées</span>
-            <span class="error-count" id="count-equipes"></span>
-        </div>
-        <ul class="error-list" id="list-equipes"></ul>
-    </div>
-
-</div>
-
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main-area">
-
+      <!-- MAIN -->
+      <main class="main-area">
         <!-- Carte -->
         <div class="map-wrapper">
-            <div id="map"></div>
-            <div class="map-overlay" id="map-overlay">
-                <div class="map-overlay-icon">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                </div>
-                <p>Importez un fichier CSV d'équipes et cliquez sur <strong>Générer</strong> pour visualiser la répartition géographique.</p>
+          <div id="map"></div>
+          <div class="map-overlay" id="map-overlay">
+            <div class="map-overlay-icon">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"
+                />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
             </div>
+            <p>
+              Importez un fichier CSV d'équipes et cliquez sur
+              <strong>Générer</strong> pour visualiser la répartition
+              géographique.
+            </p>
+          </div>
         </div>
 
         <!-- Grille de poules -->
         <div class="pools-panel">
-            <div class="pools-header">
-                <span class="pools-header-title" id="pools-title">Répartition des poules</span>
-                <span id="conteneur-btn-echange"></span>
-                <span id="badge-edit" class="badge-edit">Mode édition</span>
-                <span class="pools-meta" id="pools-meta"></span>
-            </div>
-            <div id="edit-hint" class="edit-hint"></div>
+          <div class="pools-header">
+            <span class="pools-header-title" id="pools-title"
+              >Répartition des poules</span
+            >
+            <span id="conteneur-btn-echange"></span>
+            <span id="badge-edit" class="badge-edit">Mode édition</span>
+            <span class="pools-meta" id="pools-meta"></span>
+          </div>
+          <div id="edit-hint" class="edit-hint"></div>
 
-            <!-- Wrapper relatif pour l'overlay pointillé -->
-            <div style="position: relative;">
-                <div id="edit-overlay" class="edit-overlay"></div>
-                <div class="pools-grid" id="pools-grid">
-                    <div class="pools-empty">
-                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="14" width="7" height="7" rx="1"/>
-                            <rect x="3" y="14" width="7" height="7" rx="1"/>
-                        </svg>
-                        <p>Les poules apparaîtront ici après génération.</p>
-                    </div>
-                </div>
+          <!-- Wrapper relatif pour l'overlay pointillé -->
+          <div style="position: relative">
+            <div id="edit-overlay" class="edit-overlay"></div>
+            <div class="pools-grid" id="pools-grid">
+              <div class="pools-empty">
+                <svg
+                  width="38"
+                  height="38"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <p>Les poules apparaîtront ici après génération.</p>
+              </div>
             </div>
+          </div>
         </div>
-
-    </main>
-</div>
-<!-- Modale de confirmation retour config -->
-<div class="modal-overlay" id="modal-retour" style="display:none">
-    <div class="modal">
+      </main>
+    </div>
+    <!-- Modale de confirmation retour config -->
+    <div class="modal-overlay" id="modal-retour" style="display: none">
+      <div class="modal">
         <div class="modal-icon modal-icon--warn">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+            />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
         </div>
         <h3 class="modal-title">Retour à la configuration</h3>
         <p class="modal-message">
-            Vous allez retourner à la configuration générale.<br>
-            <strong>Toutes les poules générées seront supprimées.</strong><br>
-            Voulez-vous continuer ?
+          Vous allez retourner à la configuration générale.<br />
+          <strong>Toutes les poules générées seront supprimées.</strong><br />
+          Voulez-vous continuer ?
         </p>
         <div class="modal-actions">
-            <button class="modal-btn modal-btn--cancel" id="modal-btn-annuler">Annuler</button>
-            <button class="modal-btn modal-btn--confirm" id="modal-btn-confirmer">Oui, retourner</button>
+          <button class="modal-btn modal-btn--cancel" id="modal-btn-annuler">
+            Annuler
+          </button>
+          <button class="modal-btn modal-btn--confirm" id="modal-btn-confirmer">
+            Oui, retourner
+          </button>
         </div>
+      </div>
     </div>
-</div>
+    <div class="modal-overlay" id="modal-erreur" style="display: none">
+      <div class="modal">
+        <div class="modal-icon modal-icon--error">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 class="modal-title" id="modal-erreur-titre">Erreur</h3>
+        <p class="modal-message" id="modal-erreur-message"></p>
+        <div class="modal-actions">
+          <button
+            class="modal-btn modal-btn--confirm-error"
+            id="modal-erreur-btn"
+          >
+            J'ai compris
+          </button>
+        </div>
+      </div>
+    </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="module" src="niveau.js" defer></script>
-</body>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="niveau.js" defer></script>
+  </body>
 </html>

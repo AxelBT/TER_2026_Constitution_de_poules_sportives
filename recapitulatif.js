@@ -157,7 +157,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  
+
   function afficherNiveau(niveauData) {
+    const isModeNiveau = config.mode === "niveau";
     const { niveau, poules } = niveauData;
     const toutesLesEquipes = poules.flatMap((p) => p.equipes);
     const totalDistancesIndividuelles = toutesLesEquipes.reduce(
@@ -171,11 +174,36 @@ document.addEventListener("DOMContentLoaded", () => {
       .map((poule, pi) => {
         const couleur = PALETTE[pi % PALETTE.length];
         const lettre = poule.nom || String.fromCharCode(65 + pi);
+        let prefixeHtml = "";
+            if (isModeNiveau) {
+              let svgPath = "";
+              let couleurStatut = "";
+              if (statut.includes("+") || statut === "montante") {
+                svgPath = `<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>`;
+                couleurStatut = "#16a34a";
+              } else if (statut.includes("-") || statut === "descendante") {
+                svgPath = `<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>`;
+                couleurStatut = "#dc2626";
+              } else {
+                svgPath = `<line x1="5" y1="12" x2="19" y2="12"/>`;
+                couleurStatut = "#9ca3af";
+              }
+              prefixeHtml = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="${couleurStatut}" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     style="flex-shrink:0; width:16px; height:16px; min-width:16px; margin: 0 6px 0 2px;">
+                  ${svgPath}
+                </svg>`;
+            } else {
+              prefixeHtml = `<span class="pool-team-dot" style="flex-shrink:0; background:${couleur}"></span>`;
+            }
+        
         const lignes = poule.equipes
           .map(
             (e) => `
                 <div class="pool-team-row">
-                    <span class="pool-team-dot" style="background:${couleur}"></span>
+                    ${prefixeHtml}
                     <span class="pool-team-name">
                         ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                         </span>

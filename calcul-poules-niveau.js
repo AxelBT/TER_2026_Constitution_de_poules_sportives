@@ -10,6 +10,7 @@ import {
 } from "./calcul-poules.js";
 
 
+let config = JSON.parse(localStorage.getItem("championnatConfig"));
 
 const ORDRE_STATUTS = ["-", "=", "+"]; 
 
@@ -69,23 +70,29 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
         if (poules[p].equipes.length >= poules[p].nb_max) continue;
         if (restantes.length === 0) break;
 
-       
         let idxChoisi = restantes.findIndex(
           (eq) => !verifierClubDansPoule(poules[p], eq)
         );
 
         if (idxChoisi === -1) {
-      
-          console.warn(
-            `[genererPoulesNiveau] Contrainte club relâchée — poule ${poules[p].nom}, statut ${statut}`
+          // Contrainte club impossible à respecter — on ne relâche PAS
+          // On log les détails et on passe à la poule suivante
+          const clubsEnConflit = [...new Set(restantes.map((eq) => eq.nom_club))];
+          const clubsDejaPresents = [
+            ...new Set(poules[p].equipes.map((eq) => eq.nom_club)),
+          ];
+          const conflits = clubsEnConflit.filter((c) =>
+            clubsDejaPresents.includes(c)
           );
-          idxChoisi = 0;
-          const choix = restantes[idxChoisi];
-          poules[p].equipes.push(choix);
-          quotasRestants[statut][p]--;
-          restantes.splice(idxChoisi, 1);
-          placeeDansCeTour = true;
-          continue;
+          console.warn(
+            `[genererPoulesNiveau] Impossible de placer une équipe "${statut}" dans la poule "${poules[p].nom}" ` +
+              `sans violer la contrainte club.\n` +
+              `  → Clubs en conflit : ${conflits.join(", ")}\n` +
+              `  → Clubs déjà dans la poule : ${clubsDejaPresents.join(", ")}\n` +
+              `  → Équipes restantes à placer : ${restantes.map((e) => `${e.nom_club} ${e.numero}`).join(", ")}\n` +
+              `  → Passage à la poule suivante.`
+          );
+          continue; // ← on ne place rien, on tente la poule suivante
         }
 
         const choix = restantes[idxChoisi];
@@ -97,31 +104,45 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
       }
 
       if (!placeeDansCeTour) {
-   
+        // Aucune poule n'a pu absorber les équipes restantes dans ce tour
         console.warn(
           `[genererPoulesNiveau] ${restantes.length} équipe(s) "${statut}" ` +
-            `non placée(s) par les quotas — placement de secours.`
+            `non placée(s) après un tour complet — tentative de placement de secours.\n` +
+            `  → Équipes concernées : ${restantes.map((e) => `${e.nom_club} ${e.numero}`).join(", ")}`
         );
+
         for (const eq of restantes) {
+          // Placement de secours : poule la moins remplie respectant la contrainte club
           let cible = -1;
           let minTaille = Infinity;
           for (let p = 0; p < poules.length; p++) {
             if (poules[p].equipes.length >= poules[p].nb_max) continue;
-            if (verifierClubDansPoule(poules[p], eq)) continue;
+            if (verifierClubDansPoule(poules[p], eq)) continue; // contrainte club maintenue
             if (poules[p].equipes.length < minTaille) {
               minTaille = poules[p].equipes.length;
               cible = p;
             }
           }
-          if (cible === -1) {
-            cible = poules
-              .map((p, i) => ({ i, n: p.equipes.length }))
-              .sort((a, b) => a.n - b.n)[0].i;
-            console.warn(
-              `[genererPoulesNiveau] Contrainte club relâchée pour ${eq.nom_club} ${eq.numero}`
+
+          if (cible !== -1) {
+            console.info(
+              `[genererPoulesNiveau] Placement de secours : "${eq.nom_club} ${eq.numero}" → poule "${poules[cible].nom}".`
             );
+            poules[cible].equipes.push(eq);
+          } else {
+            // Vraiment impossible : toutes les poules ont déjà ce club OU sont pleines
+            const etatPoules = poules.map(
+              (p) =>
+                `"${p.nom}" [${p.equipes.length}/${p.nb_max}] clubs: ${[...new Set(p.equipes.map((e) => e.nom_club))].join(", ") || "—"}`
+            );
+            console.error(
+              `[genererPoulesNiveau] ÉCHEC CRITIQUE : impossible de placer "${eq.nom_club} ${eq.numero}" (statut "${statut}") ` +
+                `dans une poule sans violer la contrainte club et sans dépasser la capacité.\n` +
+                `  → État des poules :\n${etatPoules.map((l) => `      ${l}`).join("\n")}\n` +
+                `  → L'équipe n'est PAS placée. Vérifiez la configuration des poules et des quotas.`
+            );
+            // On n'ajoute PAS l'équipe — la contrainte club n'est jamais relâchée
           }
-          poules[cible].equipes.push(eq);
         }
         restantes = [];
       }
@@ -241,9 +262,10 @@ function optimiserDistances(poules, maxPasses = 20) {
 
 
 export function genererPoulesNiveau(equipes, nb_poules) {
+  const niveauActuel = config.niveauActuel || 1;
   const total_equipes = equipes.length;
   const capacites = definirCapacitesPoules(nb_poules, total_equipes);
-  const poules = initialiserPoules(nb_poules, "Niveau", capacites);
+  const poules = initialiserPoules(nb_poules, niveauActuel, capacites);
   const quotas = calculerQuotasParStatut(equipes, nb_poules);
   distribuerEquipesNiveau(poules, equipes, quotas);
   optimiserDistances(poules);
