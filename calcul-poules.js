@@ -321,7 +321,7 @@ function choisirGrainesOptimisees(
 
 export function verifierClubDansPoule(poule, equipe) {
   return poule.equipes.some((e) => {
-    if (equipe.type === "CTC" || e.type === "CTC") {
+    if (equipe.type === "CTC" && e.type === "CTC") {
       return e.ctc_num === equipe.ctc_num;
     }
     return e.num_club === equipe.num_club;

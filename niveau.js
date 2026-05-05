@@ -149,7 +149,9 @@ document.addEventListener("DOMContentLoaded", () => {
         `${config.categorie}-${config.genre}-${config.niveauActuel}`,
         JSON.stringify(poulesActuelles),
       );
-      window.location.href = buildURL(config.niveauActuel - 1);
+      config.niveauActuel--;
+      localStorage.setItem("championnatConfig", JSON.stringify(config));
+      window.location.href = buildURL(config.niveauActuel);
     } else {
       const overlay = document.getElementById("modal-retour");
       overlay.style.display = "flex";
@@ -188,7 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
       JSON.stringify(poulesActuelles),
     );
     if (config.niveauActuel < config.niveaux) {
-      window.location.href = buildURL(config.niveauActuel + 1);
+      config.niveauActuel++;
+      localStorage.setItem("championnatConfig", JSON.stringify(config));
+      window.location.href = buildURL(config.niveauActuel );
     } else {
       window.location.href =
         "recapitulatif.html?" +
@@ -416,7 +420,8 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <h3 class="modal-title">Impossible de générer les poules</h3>
           <p class="modal-message">
-              Les équipes suivantes n'ont pas pu être placées car leur club est introuvable ou ses coordonnées sont manquantes :
+              Impossible de générer les poules avec les données fournies.
+              Les équipes suivantes  n'ont pas pu être localisées :
           </p>
           
           <!-- Section Scrollable pour les équipes -->
@@ -1070,8 +1075,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalEq = poulesActuelles.reduce((s, p) => s + p.equipes.length, 0);
     meta.textContent = `${totalEq} équipes · ${poulesActuelles.length} poules`;
 
-    // Créer le bouton une seule fois
-    // Créer le bouton une seule fois
     if (btnEchange && !document.getElementById("btn-switch")) {
       btnEchange.innerHTML = `
         <button id="btn-switch" class="btn-switch-style" style="display: inline-flex; align-items: center; justify-content: center;">
@@ -1094,46 +1097,57 @@ document.addEventListener("DOMContentLoaded", () => {
         const lettre = poule.nom || String.fromCharCode(65 + pi);
         const couleur = PALETTE[pi % PALETTE.length];
 
-        // Calcul du poids/difficulté de la poule si on est en mode "niveau"
-        let difficultePoule = 0;
-        if (isModeNiveau) {
-          difficultePoule = poule.equipes.reduce((acc, e) => {
-            const statut = (e.statut_niveau || "").toLowerCase();
-            if (statut.includes("+") || statut === "montante") return acc - 1;
-            if (statut.includes("-") || statut === "descendante")
-              return acc + 1;
-            return acc; // Maintien ou égal (=) vaut 0
-          }, 0);
-        }
+        // Calcul du poids de la poule (toujours calculé)
+        const difficultePoule = poule.equipes.reduce((acc, e) => {
+          const statut = (e.statut_niveau || "").toLowerCase();
+          if (statut.includes("+") || statut === "montante") return acc - 1;
+          if (statut.includes("-") || statut === "descendante") return acc + 1;
+          return acc;
+        }, 0);
 
         let lignes = poule.equipes
           .map((e) => {
-            // Icône de statut de niveau
-            let iconStatut = "";
+            const statut = (e.statut_niveau || "").toLowerCase();
+
+            // En mode niveau : icône statut à taille fixe (flex-shrink:0) à la place du dot
+            // En mode normal : dot coloré classique
+            let prefixeHtml = "";
             if (isModeNiveau) {
-              const statut = (e.statut_niveau || "").toLowerCase();
+              let svgPath = "";
+              let couleurStatut = "";
               if (statut.includes("+") || statut === "montante") {
-                // Flèche vers le haut (vert)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+                svgPath = `<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>`;
+                couleurStatut = "#16a34a";
               } else if (statut.includes("-") || statut === "descendante") {
-                // Flèche vers le bas (rouge)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
+                svgPath = `<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>`;
+                couleurStatut = "#dc2626";
               } else {
-                // Maintien (tiret gris)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+                svgPath = `<line x1="5" y1="12" x2="19" y2="12"/>`;
+                couleurStatut = "#9ca3af";
               }
+              prefixeHtml = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="${couleurStatut}" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     style="flex-shrink:0; width:16px; height:16px; min-width:16px; margin: 0 6px 0 2px;">
+                  ${svgPath}
+                </svg>`;
+            } else {
+              prefixeHtml = `<span class="pool-team-dot" style="flex-shrink:0; background:${couleur}"></span>`;
             }
 
             return `
                 <div class="pool-team-row${modeEdition ? " clickable" : ""}"
                      data-poule-index="${pi}"
-                     data-equipe-id="${e.id}">
-                    <span class="pool-team-dot" style="background:${couleur}"></span>
-                    ${iconStatut}
-                    <span class="pool-team-name">
+                     data-equipe-id="${e.id}"
+                     style="display:flex; align-items:center;">
+                    ${prefixeHtml}
+                    <span class="pool-team-name" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                       ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
                     </span>
-                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} Km</span>
+                    <span class="pool-team-club" style="flex-shrink:0; margin-left:8px;">
+                      ${parseFloat(e.distance_totale || 0).toFixed(0)} Km
+                    </span>
                 </div>
             `;
           })
@@ -1144,33 +1158,28 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="pool-team-row${modeEdition ? " clickable" : ""}"
              data-poule-index="${pi}"
              data-equipe-id="exempt"
-             style="background-color: rgba(0, 0, 0, 0.05); color: #888; font-style: italic;">
-            <span class="pool-team-dot" style="background: #ccc; opacity: 0.5;"></span>
-            <span>Exempt</span>
-            <span class="pool-team-club">-</span>
+             style="display:flex; align-items:center; background-color: rgba(0, 0, 0, 0.05); color: #888; font-style: italic;">
+            <span class="pool-team-dot" style="flex-shrink:0; background: #ccc; opacity: 0.5;"></span>
+            <span style="flex:1;">Exempt</span>
+            <span class="pool-team-club" style="flex-shrink:0;">-</span>
         </div>`;
         }
 
-        // Gestion de l'en-tête selon le mode
-        let statsEnteteHtml = "";
-        if (isModeNiveau) {
-          const affichagePoids =
-            difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
-          statsEnteteHtml = `
-                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
-                    Poids de la poule : ${affichagePoids}
-                </div>
-             `;
-        } else {
-          statsEnteteHtml = `
-                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
-                    Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
-                </div>
-                <div style="font-size:0.7rem; color:#888; font-weight:normal">
-                    σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
-                </div>
-             `;
-        }
+        // En-tête : toujours distance moyenne + poids (tous modes)
+        const affichagePoids = difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+        const statsEnteteHtml = `
+          <div style="text-align:right; line-height:1.4;">
+            <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+              Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
+            </div>
+            <div style="font-size:0.7rem; color:#888; font-weight:normal">
+              σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} km
+            </div>
+            ${isModeNiveau ? `
+            <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
+              Poids : ${affichagePoids}
+            </div>` : ""}
+          </div>`;
 
         return `
             <div class="pool-card" data-poule-index="${pi}">
@@ -1187,11 +1196,9 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
 
     if (modeEdition) {
-      // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
       attacherListenersEdition();
       attacherListenersMarqueurs();
     } else {
-      // Mode normal : listener highlight carte sur les cards uniquement
       document.querySelectorAll(".pool-card").forEach((card, i) => {
         card.addEventListener("click", () => {
           highlightPoule(i);
