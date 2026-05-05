@@ -534,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         );
       } else {
-        m.setIcon(createPinIcon("#888780"));
+        m.setIcon(createPinIcon());
         m.setZIndexOffset(0);
       }
     });
@@ -607,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.setIcon(createPinIcon(couleur, 1));
         m.setZIndexOffset(1000);
       } else {
-        m.setIcon(createPinIcon("#888780"));
+        m.setIcon(createPinIcon());
         m.setZIndexOffset(0);
       }
     });
@@ -997,9 +997,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let lignes = poule.equipes
           .map((e) => {
             const statut = (e.statut_niveau || "").toLowerCase();
-
-            // En mode niveau : icône statut à taille fixe (flex-shrink:0) à la place du dot
-            // En mode normal : dot coloré classique
             let prefixeHtml = "";
             if (isModeNiveau) {
               let svgPath = "";
@@ -1079,7 +1076,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="pool-card-head">
             <span class="pool-dot" style="background:${couleur}"></span>
             Poule ${lettre}
-            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="visibility:hidden"' : ""}>
+            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="visibility:hidden"' : ''}>
                 voir sur carte
             </span>
             <div style="text-align:right;">
