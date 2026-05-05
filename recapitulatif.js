@@ -1,12 +1,9 @@
 import { distance } from "./calcul-poules.js";
 import { toast } from "./toast.js";
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const config = {
-    categorie: params.get("categorie") || "senior",
-    niveaux: parseInt(params.get("niveaux")) || 1,
-    genre: params.get("genre") || "masculin",
-  };
+ 
+  
+  let config = JSON.parse(localStorage.getItem("championnatConfig"));
 
   const PALETTE = [
     "#0abbef",
@@ -161,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function afficherNiveau(niveauData) {
     const isModeNiveau = config.mode === "niveau";
+    console.log("Affichage du niveau", niveauData.niveau, "Mode:", config.mode);
     const { niveau, poules } = niveauData;
     const toutesLesEquipes = poules.flatMap((p) => p.equipes);
     const totalDistancesIndividuelles = toutesLesEquipes.reduce(
@@ -174,7 +172,17 @@ document.addEventListener("DOMContentLoaded", () => {
       .map((poule, pi) => {
         const couleur = PALETTE[pi % PALETTE.length];
         const lettre = poule.nom || String.fromCharCode(65 + pi);
-        let prefixeHtml = "";
+        const difficultePoule = poule.equipes.reduce((acc, e) => {
+          const statut = (e.statut_niveau || "").toLowerCase();
+          if (statut.includes("+") || statut === "montante") return acc - 1;
+          if (statut.includes("-") || statut === "descendante") return acc + 1;
+          return acc;
+        }, 0);
+        const lignes = poule.equipes
+          .map(
+            (e) =>{
+            let prefixeHtml = "";
+            const statut = (e.statut_niveau || "").toLowerCase();
             if (isModeNiveau) {
               let svgPath = "";
               let couleurStatut = "";
@@ -198,10 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
               prefixeHtml = `<span class="pool-team-dot" style="flex-shrink:0; background:${couleur}"></span>`;
             }
-        
-        const lignes = poule.equipes
-          .map(
-            (e) => `
+              
+            return  `
                 <div class="pool-team-row">
                     ${prefixeHtml}
                     <span class="pool-team-name">
@@ -209,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
                     <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} km</span>
                 </div>
-            `,
+            `;}
           )
           .join("");
 
@@ -224,6 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <span class="pool-team-club">-</span>
                     </div>`;
         }
+        const affichagePoids = difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
         return `
             <div class="pool-card">
                 <div class="pool-card-head">
@@ -236,6 +243,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-size:0.7rem; color:#888; font-weight:normal">
                             σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
                         </div>
+                        ${isModeNiveau ? `
+            <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
+              Poids : ${affichagePoids}
+            </div>` : ""}
                     </div>
                 </div>
                 ${lignes}${exempt}

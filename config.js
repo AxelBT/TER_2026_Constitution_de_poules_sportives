@@ -122,6 +122,9 @@ function traiter_csv_clubs(contenu) {
             type: type.trim()
         });
 
+
+
+        
         console.log(`✓ ${nom} (${lat}, ${lng})`);
     }
 
