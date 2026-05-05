@@ -558,6 +558,7 @@ body {
     border-radius: var(--radius-md);
     overflow: hidden;
     transition: border-color var(--dur) ease, box-shadow var(--dur) ease;
+    cursor: default; /* curseur normal partout */
 }
 
 .pool-card:hover {
@@ -566,13 +567,73 @@ body {
 }
 
 .pool-card-head {
-    display: flex; align-items: center; gap: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
     padding: 9px var(--space-md);
     background: var(--clr-surface-50);
     border-bottom: 1px solid var(--clr-surface-200);
     font-weight: 700;
     font-size: .85rem;
     color: var(--clr-surface-800);
+    cursor: default; /* pas pointer sur tout le header */
+}
+
+.pool-card-head::after {
+    display: none;
+}
+
+.pool-card-map-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--clr-surface-400);
+    cursor: pointer; /* pointer UNIQUEMENT ici */
+    transition: background .2s, color .2s, border-color .2s, opacity .2s;
+    opacity: 0;
+    flex-shrink: 0;
+}
+
+.pool-card:hover .pool-card-map-btn {
+    opacity: 1;
+}
+
+.pool-card-map-btn:hover {
+    background: var(--clr-primary-50);
+    color: var(--clr-primary-600);
+    border-color: var(--clr-primary-200);
+}
+
+/* En mode édition — pas de bouton carte */
+.pool-card-map-btn.hidden {
+    display: none;
+}
+
+
+.pool-card-hint {
+    font-size: .68rem;
+    font-weight: 500;
+    color: var(--clr-primary-500);
+    opacity: 0;
+    transition: opacity .2s;
+    white-space: nowrap;
+    margin-left: auto;  /* pousse vers la droite */
+    margin-right: var(--space-sm);
+    cursor: pointer;
+}
+
+.pool-card:hover .pool-card-hint {
+    opacity: 1;
+}
+
+/* En mode édition on ne montre pas le hint */
+.pool-card .pool-team-row.clickable ~ * .pool-card-hint {
+    display: none;
 }
 
 .pool-dot {
@@ -587,6 +648,7 @@ body {
     font-size: .815rem;
     gap: var(--space-sm);
     border-bottom: 1px solid var(--clr-surface-100);
+    cursor: default;
 }
 
 .pool-team-name {
@@ -883,6 +945,21 @@ body {
     color: #ea580c;
     border: 2px solid #fed7aa;
 }
+.modal-icon--error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 2px solid #fecaca;
+}
+
+.modal-btn--confirm-error {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(220,38,38,.25);
+}
+
+.modal-btn--confirm-error:hover {
+    box-shadow: 0 4px 14px rgba(220,38,38,.35);
+}
 
 .modal-title {
     font-family: var(--ff-display);
@@ -958,4 +1035,20 @@ body {
     border: 1px solid #e2e8f0;
     background: white;
     pointer-events: none; /* évite tout conflit avec le curseur */
+}
+
+@keyframes shake {
+    0%   { transform: translateX(0);    }
+    15%  { transform: translateX(-6px); }
+    30%  { transform: translateX(6px);  }
+    45%  { transform: translateX(-4px); }
+    60%  { transform: translateX(4px);  }
+    75%  { transform: translateX(-2px); }
+    90%  { transform: translateX(2px);  }
+    100% { transform: translateX(0);    }
+}
+
+.card-shake {
+    animation: shake 0.5s ease;
+    border-color: #fca5a5 !important;  /* bord rouge pendant la vibration */
 }

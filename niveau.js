@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
         niveaux: config.niveaux,
         genre: config.genre,
         mode: config.mode,
-        niveauActuel,
+        niveauActuel: config.niveauActuel,
       }).toString()
     );
   }
@@ -149,7 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
         `${config.categorie}-${config.genre}-${config.niveauActuel}`,
         JSON.stringify(poulesActuelles),
       );
-      window.location.href = buildURL(config.niveauActuel - 1);
+      config.niveauActuel = config.niveauActuel - 1;
+      window.location.href = buildURL(config.niveauActuel);
     } else {
       const overlay = document.getElementById("modal-retour");
       overlay.style.display = "flex";
@@ -188,7 +189,9 @@ document.addEventListener("DOMContentLoaded", () => {
       JSON.stringify(poulesActuelles),
     );
     if (config.niveauActuel < config.niveaux) {
-      window.location.href = buildURL(config.niveauActuel + 1);
+      config.niveauActuel = config.niveauActuel + 1;
+
+      window.location.href = buildURL(config.niveauActuel);
     } else {
       window.location.href =
         "recapitulatif.html?" +
@@ -213,9 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!succes) {
         equipesActuelles = []; //
-        if (tableau.length != 0) {
-          localStorage.setItem("equipesInconnues", JSON.stringify(tableau));
-        }
+        if (tableau.length > 0) afficherEquipesInconnues(tableau);
         return;
       }
 
@@ -228,10 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
       //fileLabel.innerHTML = `✓ ${file.name} — ${tableau.length} équipes chargées`;
       //fileLabel.style.color = "#16a34a";
       toast(`${tableau.length} équipes chargées avec succès.`, "success");
-      if (!equipesActuelles.length) {
-        toast("Veuillez d'abord déposer un fichier valide.", "warn");
-        return;
-      }
       afficherCarte(equipesActuelles);
       toast(
         `${equipesActuelles.length} équipes affichées (mode : ${config.mode === "niveau" ? "par niveau" : "par distance"}).`,
@@ -243,7 +240,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnGenerer.addEventListener("click", () => {
-    afficherErreurs();
     if (!equipesActuelles.length) {
       toast("Veuillez d'abord déposer un fichier valide.", "warn");
       return;
@@ -253,26 +249,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const nb_max = parseInt(document.getElementById("nb_max_equipes").value);
     const nb_equipes = equipesActuelles.length;
     if (nb_poules * nb_max < nb_equipes) {
-      toast(
-        "Capacité insuffisante : Veuillez augmenter le nombre de poules ou la taille max.",
-        "error",
+      afficherErreur(
+        "Capacité insuffisante",
+        "La capacité des poules est insuffisante pour accueillir toutes les équipes. Veuillez augmenter le nombre de poules ou la taille maximale.",
       );
       return;
     }
 
     // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules
     if (nb_equipes <= nb_poules * (nb_max - 1)) {
-      toast(
-        "Trop peu d'équipes : Veuillez réduire le nombre de poules ou la taille max.",
-        "error",
+      afficherErreur(
+        "Paramètres incohérents",
+        "Trop peu d'équipes pour la configuration choisie. Veuillez réduire le nombre de poules ou la taille maximale.",
       );
       return;
     }
-
-    if (!verifierSaturationClub(equipesActuelles, nb_poules)) {
-      toast(
-        "Trop d\'équipes d\'un même club pour le nombre de poules.",
-        "error",
+    const check = verifierSaturationClub(equipesActuelles, nb_poules);
+    if (!check.ok) {
+      afficherErreur(
+        "Contrainte de club non respectée",
+        `Le club "${check.nomClub}" (${check.numClub}) possède ${check.nbEquipes} équipes ` +
+          `pour seulement ${nb_poules} poule(s) disponible(s). ` +
+          `Il est impossible de répartir ses équipes sans conflit. ` +
+          `Veuillez augmenter le nombre de poules à au moins ${check.nbEquipes}.`,
       );
       return;
     }
@@ -284,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (config.mode === "niveau") {
       poulesActuelles = genererPoulesNiveau(equipesActuelles, nb_poules);
     } else {
-      poulesActuelles = generer_poules(equipesActuelles, nb_poules, nb_max);
+      poulesActuelles = generer_poules(equipesActuelles, nb_poules);
     }
     if (poulesActuelles) {
       afficherPoules();
@@ -293,6 +292,15 @@ document.addEventListener("DOMContentLoaded", () => {
         `${equipesActuelles.length} équipes réparties en ${poulesActuelles.length} poules.`,
         "success",
       );
+      if (!localStorage.getItem("hint_carte_vu")) {
+        setTimeout(() => {
+          toast(
+            "Cliquez sur une poule pour la visualiser sur la carte.",
+            "info",
+          );
+          localStorage.setItem("hint_carte_vu", "1");
+        }, 4500);
+      }
     }
   });
 
@@ -359,17 +367,29 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+    if (bounds.length) {
+      map.fitBounds(bounds, { padding: [40, 40], animate: false });
+      map.once("moveend", () => {
+        map.panBy([0, -38], { animate: false }); // 30px vers le bas — ajuste selon tes tests
+      });
+    }
   }
 
   /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
+  function afficherErreur(titre, message) {
+    const overlay = document.getElementById("modal-erreur");
+    document.getElementById("modal-erreur-titre").textContent = titre;
+    document.getElementById("modal-erreur-message").textContent = message;
+    overlay.style.display = "flex";
 
-  function afficherErreurs() {
+    document.getElementById("modal-erreur-btn").onclick = () => {
+      overlay.style.display = "none";
+    };
+  }
+
+  function afficherClubIngores() {
     const clubsIgnores = JSON.parse(
       localStorage.getItem("clubs_ignorés") || "[]",
-    );
-    const equipesInconnues = JSON.parse(
-      localStorage.getItem("equipesInconnues") || "[]",
     );
 
     const panel = document.getElementById("errors-panel");
@@ -390,7 +410,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (panel) panel.style.display = visible ? "flex" : "none";
+  }
 
+  function afficherEquipesInconnues(equipesInconnues) {
     // Nouvelle gestion des équipes inconnues avec un Modal
     if (equipesInconnues.length > 0) {
       // Supprime un éventuel modal précédent pour éviter les doublons
@@ -471,7 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── HIGHLIGHT POULE ────────────────────────────────────────────────────── */
   highlightPoule._actif = null;
 
-  /*function highlightPoule(pouleIndex) {
+  function highlightPoule(pouleIndex) {
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
       //resetMarkers();
@@ -501,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
         m.on("mouseout", function (e) {
           this.closePopup();
         });*/
-  /*m.bindTooltip(
+        m.bindTooltip(
           `<strong>${equipe.type === "CTC" ? equipe.ctc_nom : equipe.nom_club} ${equipe.numero}</strong><br>
      <span style="color:#888">${equipe.type === "CTC" ? "CTC " + equipe.ctc_num : "Club " + equipe.num_club}</span>`,
           {
@@ -517,17 +539,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // fitBounds — inchangé
     const pBounds = markers
-      .filter((m) => idsPoule.has(m.equipeId)) // ← equipeId
+      .filter((m) => idsPoule.has(m.equipeId))
       .map((m) => m.getLatLng());
-    if (pBounds.length)
+    if (pBounds.length) {
       map.fitBounds(
         pBounds.map((ll) => [ll.lat, ll.lng]),
-        { padding: [60, 60], maxZoom: 10 },
+        { padding: [40, 40], maxZoom: 10 },
       );
-  }*/
-  function highlightPoule(pouleIndex) {
+      map.once("moveend", () => {
+        map.panBy([0, -38]);
+      });
+    }
+  }
+  /*function highlightPoule(pouleIndex) {
     // Reclic sur la même poule → reset
     if (highlightPoule._actif === pouleIndex) {
       highlightPoule._actif = null;
@@ -549,11 +574,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (idsPoule.has(m.equipeId)) {
         m.setIcon(createPinIcon(couleur, 1));
         m.setZIndexOffset(1000);
-        m.openTooltip(); 
+        m.openTooltip();
       } else {
         m.setIcon(createPinIcon("#888780", 0.2));
         m.setZIndexOffset(0);
-        m.closeTooltip(); 
+        m.closeTooltip();
       }
     });
 
@@ -571,7 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { padding: [60, 60], maxZoom: 10 },
       );
     }
-  }
+  }*/
 
   function highlightToutesLesPoules() {
     const equipeIdToCouleur = new Map();
@@ -596,6 +621,9 @@ document.addEventListener("DOMContentLoaded", () => {
         bounds.map((ll) => [ll.lat, ll.lng]),
         { padding: [40, 40] },
       );
+      map.once("moveend", () => {
+        map.panBy([0, -38]);
+      });
     }
   }
 
@@ -661,10 +689,7 @@ document.addEventListener("DOMContentLoaded", () => {
       afficherPoules();
     }
   }
-  /**
-   * Fonction commune — effectue le swap entre deux équipes
-   * appelée par attacherListenersEdition et attacherListenersMarqueurs
-   */
+
   function effectuerEchange(sel, pi, eid) {
     const pA = poulesActuelles[sel.pi];
     const pB = poulesActuelles[pi];
@@ -709,10 +734,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 2500);
       }
 
-      return true; // échange réussi
+      return { succes: true };
     } else {
-      toast("Une équipe de ce club appartient déjà à cette poule", "error");
-      return false; // échange refusé
+      //toast("Une équipe de ce club appartient déjà à cette poule", "error");
+      if (verifierClubDansPoule(pA, pB.equipes[iB]))
+        return { succes: false, poule: sel.pi };
+      else return { succes: false, poule: pi };
     }
   }
 
@@ -770,6 +797,9 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
           if (!sel) return;
 
+          let conflitPoule = null;
+          let erreurExempt = false;
+
           if (isExemptA || isExemptB) {
             // logique transfert exempt — inchangée
             const nb_max_equipes = Math.max(
@@ -797,22 +827,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 ajouterEquipeDansPoule(destPoule, equipeObj);
                 finaliserStatistiquesPoules(poulesActuelles);
               } else {
-                toast(
+                /*toast(
                   "Il existe déjà une équipe du même club dans la poule de destination",
                   "error",
-                );
+                );*/
+                conflitPoule = sel.pi;
               }
             } else {
-              toast("Pas plus d'un exempt dans une poule", "error");
+              //toast("Pas plus d'un exempt dans une poule", "error");
+              erreurExempt = true;
             }
           } else {
-            // ← appel à la fonction commune
-            effectuerEchange(sel, pi, eid);
+            let reponse = effectuerEchange(sel, pi, eid);
+            if (!reponse.succes) conflitPoule = reponse.poule;
           }
 
           selection = null;
           afficherPoules();
           highlightToutesLesPoules();
+          if (conflitPoule !== null) {
+            signalerConflitClub(conflitPoule);
+            //signalerConflitClub(sel.pi);
+          }
+          if (erreurExempt) {
+            signalerErreurExempt(pi);
+          }
         }, 120);
       });
     });
@@ -881,7 +920,300 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /*function attacherListenersEdition() {
+  function signalerConflitClub(pouleIndex) {
+    // Vibration de la card
+    const card = document.querySelectorAll(".pool-card")[pouleIndex];
+    if (card) {
+      card.classList.add("card-shake");
+      setTimeout(() => card.classList.remove("card-shake"), 500);
+    }
+
+    // Toast warn (pas error) — léger et non bloquant
+    toast("Conflit de club — même club déjà présent dans cette poule", "warn");
+  }
+
+  function signalerErreurExempt(pouleIndex) {
+    const card = document.querySelectorAll(".pool-card")[pouleIndex];
+    if (card) {
+      card.classList.add("card-shake");
+      setTimeout(() => card.classList.remove("card-shake"), 500);
+    }
+    toast("Pas plus d'un exempt par poule", "warn");
+  }
+
+  /* ====================================================
+       GRILLE DE POULES
+       ==================================================== */
+
+  function afficherPoules() {
+    const grid = document.getElementById("pools-grid");
+    const meta = document.getElementById("pools-meta");
+    const btnEchange = document.getElementById("conteneur-btn-echange");
+
+    highlightPoule._actif = null;
+
+    if (!poulesActuelles.length) {
+      meta.textContent = "";
+      grid.innerHTML = `
+            <div class="pools-empty">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <p>Les poules apparaîtront ici après génération.</p>
+            </div>`;
+      return;
+    }
+
+    const totalEq = poulesActuelles.reduce((s, p) => s + p.equipes.length, 0);
+    meta.textContent = `${totalEq} équipes · ${poulesActuelles.length} poules`;
+
+    // Créer le bouton une seule fois
+    // Créer le bouton une seule fois
+    if (btnEchange && !document.getElementById("btn-switch")) {
+      btnEchange.innerHTML = `
+        <button id="btn-switch" class="btn-switch-style" style="display: inline-flex; align-items: center; justify-content: center;">
+            <svg id="icon-swap" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
+            </svg>
+            <span>Modifier les poules</span>
+        </button>`;
+
+      document.getElementById("btn-switch").addEventListener("click", () => {
+        setModeEdition(!modeEdition);
+      });
+    }
+
+    const nb_max_equipes = Math.max(...poulesActuelles.map((p) => p.nb_max));
+    const isModeNiveau = config.mode === "niveau";
+
+    grid.innerHTML = poulesActuelles
+      .map((poule, pi) => {
+        const lettre = poule.nom || String.fromCharCode(65 + pi);
+        const couleur = PALETTE[pi % PALETTE.length];
+
+        // Calcul du poids/difficulté de la poule si on est en mode "niveau"
+        let difficultePoule = 0;
+        if (isModeNiveau) {
+          difficultePoule = poule.equipes.reduce((acc, e) => {
+            const statut = (e.statut_niveau || "").toLowerCase();
+            if (statut.includes("+") || statut === "montante") return acc - 1;
+            if (statut.includes("-") || statut === "descendante")
+              return acc + 1;
+            return acc; // Maintien ou égal (=) vaut 0
+          }, 0);
+        }
+
+        let lignes = poule.equipes
+          .map((e) => {
+            // Icône de statut de niveau
+            let iconStatut = "";
+            if (isModeNiveau) {
+              const statut = (e.statut_niveau || "").toLowerCase();
+              if (statut.includes("+") || statut === "montante") {
+                // Flèche vers le haut (vert)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+              } else if (statut.includes("-") || statut === "descendante") {
+                // Flèche vers le bas (rouge)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
+              } else {
+                // Maintien (tiret gris)
+                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+              }
+            }
+
+            return `
+                <div class="pool-team-row${modeEdition ? " clickable" : ""}"
+                     data-poule-index="${pi}"
+                     data-equipe-id="${e.id}">
+                    <span class="pool-team-dot" style="background:${couleur}"></span>
+                    ${iconStatut}
+                    <span class="pool-team-name">
+                      ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
+                    </span>
+                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} Km</span>
+                </div>
+            `;
+          })
+          .join("");
+
+        if (poule.equipes.length < nb_max_equipes) {
+          lignes += `
+        <div class="pool-team-row${modeEdition ? " clickable" : ""}"
+             data-poule-index="${pi}"
+             data-equipe-id="exempt"
+             style="background-color: rgba(0, 0, 0, 0.05); color: #888; font-style: italic;">
+            <span class="pool-team-dot" style="background: #ccc; opacity: 0.5;"></span>
+            <span>Exempt</span>
+            <span class="pool-team-club">-</span>
+        </div>`;
+        }
+
+        // Gestion de l'en-tête selon le mode
+        let statsEnteteHtml = "";
+        if (isModeNiveau) {
+          const affichagePoids =
+            difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+          statsEnteteHtml = `
+                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+                    Poids de la poule : ${affichagePoids}
+                </div>
+             `;
+        } else {
+          statsEnteteHtml = `
+                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
+                    Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
+                </div>
+                <div style="font-size:0.7rem; color:#888; font-weight:normal">
+                    σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
+                </div>
+             `;
+        }
+
+        /*return `
+    <div class="pool-card" data-poule-index="${pi}">
+        <div class="pool-card-head">
+            <span class="pool-dot" style="background:${couleur}"></span>
+            Poule ${lettre}
+            <button
+                class="pool-card-map-btn ${modeEdition ? "hidden" : ""}"
+                data-poule-index="${pi}"
+                title="Voir sur la carte">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+            </button>
+            <div style="text-align:right; margin-left:auto;">
+                ${statsEnteteHtml}
+            </div>
+        </div>
+        ${lignes}
+    </div>`;*/
+    return `
+    <div class="pool-card" data-poule-index="${pi}">
+        <div class="pool-card-head">
+            <span class="pool-dot" style="background:${couleur}"></span>
+            Poule ${lettre}
+            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="display:none"' : ''}>
+                voir sur carte
+            </span>
+            <div style="text-align:right;">
+                ${statsEnteteHtml}
+            </div>
+        </div>
+        ${lignes}
+    </div>`;
+      })
+      .join("");
+
+    if (modeEdition) {
+      // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
+      attacherListenersEdition();
+      attacherListenersMarqueurs();
+    } else {
+      // Mode normal : listener highlight carte sur les cards uniquement
+      document.querySelectorAll(".pool-card-hint").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation(); // évite la propagation vers la card
+          const pi = parseInt(btn.dataset.pouleIndex);
+          highlightPoule(pi);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    }
+  }
+  /* ── INIT ───────────────────────────────────────────────────────────────── */
+  updateTitre();
+  renderStepper();
+  afficherClubIngores();
+
+  setTimeout(() => map.invalidateSize(), 100);
+
+  /* ── RESTAURATION ───────────────────────────────────────────────────────── */
+  const cle1 = `${config.categorie}-${config.genre}-${config.niveauActuel}`;
+  const poulesStockees = localStorage.getItem(cle1);
+  const cle2 = `csv_equipes_niveau${config.niveauActuel}`;
+  const equipesStockees = localStorage.getItem(cle2);
+
+  if (equipesStockees) {
+    const csvStocke = localStorage.getItem(
+      `csv_equipes_niveau${config.niveauActuel}`,
+    );
+    const csvNom = localStorage.getItem(`csv_nom_niveau${config.niveauActuel}`);
+
+    if (csvStocke && csvNom) {
+      const blob = new Blob([csvStocke], { type: "text/csv" });
+      const file = new File([blob], csvNom, { type: "text/csv" });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      fileLabel.innerHTML = `✓ ${csvNom}`;
+    }
+    equipesActuelles = equipesStockees ? JSON.parse(equipesStockees) : [];
+    afficherCarte(equipesActuelles);
+    if (poulesStockees) {
+      try {
+        //const poules = JSON.parse(poulesStockees);
+        poulesActuelles = poulesStockees ? JSON.parse(poulesStockees) : [];
+        if (poulesActuelles.length > 0) {
+          document.getElementById("nb_poules").value = poulesActuelles.length;
+          document.getElementById("nb_max_equipes").value = Math.max(
+            ...poulesActuelles.map((p) => p.nb_max),
+          );
+        }
+        afficherPoules();
+        highlightToutesLesPoules();
+      } catch (err) {
+        console.warn("Erreur lors de la restauration des poules :", err);
+      }
+    }
+  }
+});
+
+/*if (poulesStockees) {
+    try {
+      //const poules = JSON.parse(poulesStockees);
+      poulesActuelles = poulesStockees ? JSON.parse(poulesStockees) : [];
+      if (poulesActuelles.length > 0) {
+        document.getElementById("nb_poules").value = poulesActuelles.length;
+        document.getElementById("nb_max_equipes").value = Math.max(
+          ...poulesActuelles.map((p) => p.nb_max),
+        );
+
+        equipesActuelles = equipesStockees ? JSON.parse(equipesStockees) : [];
+        afficherCarte(equipesActuelles);
+        afficherPoules();
+        highlightToutesLesPoules();
+
+        const csvStocke = localStorage.getItem(
+          `csv_equipes_niveau${config.niveauActuel}`,
+        );
+        const csvNom = localStorage.getItem(
+          `csv_nom_niveau${config.niveauActuel}`,
+        );
+
+        if (csvStocke && csvNom) {
+          const blob = new Blob([csvStocke], { type: "text/csv" });
+          const file = new File([blob], csvNom, { type: "text/csv" });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+          fileLabel.innerHTML = `✓ ${csvNom}`;
+        }
+        toast(`Poules déjà générées pour ce niveau`, "info");
+      }
+    } catch (err) {
+      console.warn("Erreur lors de la restauration des poules :", err);
+    }
+  }
+});*/
+
+/*function attacherListenersEdition() {
     document.querySelectorAll(".pool-team-row").forEach((el) => {
       el.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1036,217 +1368,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }*/
-  /*[pA.equipes[iA], pB.equipes[iB]] = [
+/*[pA.equipes[iA], pB.equipes[iB]] = [
                   pB.equipes[iB],
                   pA.equipes[iA],
                 ];*/
-
-  /* ====================================================
-       GRILLE DE POULES
-       ==================================================== */
-
-  function afficherPoules() {
-    const grid = document.getElementById("pools-grid");
-    const meta = document.getElementById("pools-meta");
-    const btnEchange = document.getElementById("conteneur-btn-echange");
-
-    highlightPoule._actif = null;
-
-    if (!poulesActuelles.length) {
-      meta.textContent = "";
-      grid.innerHTML = `
-            <div class="pools-empty">
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                </svg>
-                <p>Les poules apparaîtront ici après génération.</p>
-            </div>`;
-      return;
-    }
-
-    const totalEq = poulesActuelles.reduce((s, p) => s + p.equipes.length, 0);
-    meta.textContent = `${totalEq} équipes · ${poulesActuelles.length} poules`;
-
-    // Créer le bouton une seule fois
-    // Créer le bouton une seule fois
-    if (btnEchange && !document.getElementById("btn-switch")) {
-      btnEchange.innerHTML = `
-        <button id="btn-switch" class="btn-switch-style" style="display: inline-flex; align-items: center; justify-content: center;">
-            <svg id="icon-swap" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
-                <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
-            </svg>
-            <span>Modifier les poules</span>
-        </button>`;
-
-      document.getElementById("btn-switch").addEventListener("click", () => {
-        setModeEdition(!modeEdition);
-      });
-    }
-
-    const nb_max_equipes = Math.max(...poulesActuelles.map((p) => p.nb_max));
-    const isModeNiveau = config.mode === "niveau";
-
-    grid.innerHTML = poulesActuelles
-      .map((poule, pi) => {
-        const lettre = poule.nom || String.fromCharCode(65 + pi);
-        const couleur = PALETTE[pi % PALETTE.length];
-
-        // Calcul du poids/difficulté de la poule si on est en mode "niveau"
-        let difficultePoule = 0;
-        if (isModeNiveau) {
-          difficultePoule = poule.equipes.reduce((acc, e) => {
-            const statut = (e.statut_niveau || "").toLowerCase();
-            if (statut.includes("+") || statut === "montante") return acc - 1;
-            if (statut.includes("-") || statut === "descendante")
-              return acc + 1;
-            return acc; // Maintien ou égal (=) vaut 0
-          }, 0);
-        }
-
-        let lignes = poule.equipes
-          .map((e) => {
-            // Icône de statut de niveau
-            let iconStatut = "";
-            if (isModeNiveau) {
-              const statut = (e.statut_niveau || "").toLowerCase();
-              if (statut.includes("+") || statut === "montante") {
-                // Flèche vers le haut (vert)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
-              } else if (statut.includes("-") || statut === "descendante") {
-                // Flèche vers le bas (rouge)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
-              } else {
-                // Maintien (tiret gris)
-                iconStatut = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-              }
-            }
-
-            return `
-                <div class="pool-team-row${modeEdition ? " clickable" : ""}"
-                     data-poule-index="${pi}"
-                     data-equipe-id="${e.id}">
-                    <span class="pool-team-dot" style="background:${couleur}"></span>
-                    ${iconStatut}
-                    <span class="pool-team-name">
-                      ${e.type === "CTC" ? e.ctc_nom : e.nom_club} — ${e.numero}
-                    </span>
-                    <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} Km</span>
-                </div>
-            `;
-          })
-          .join("");
-
-        if (poule.equipes.length < nb_max_equipes) {
-          lignes += `
-        <div class="pool-team-row${modeEdition ? " clickable" : ""}"
-             data-poule-index="${pi}"
-             data-equipe-id="exempt"
-             style="background-color: rgba(0, 0, 0, 0.05); color: #888; font-style: italic;">
-            <span class="pool-team-dot" style="background: #ccc; opacity: 0.5;"></span>
-            <span>Exempt</span>
-            <span class="pool-team-club">-</span>
-        </div>`;
-        }
-
-        // Gestion de l'en-tête selon le mode
-        let statsEnteteHtml = "";
-        if (isModeNiveau) {
-          const affichagePoids =
-            difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
-          statsEnteteHtml = `
-                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
-                    Poids de la poule : ${affichagePoids}
-                </div>
-             `;
-        } else {
-          statsEnteteHtml = `
-                <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600)">
-                    Dist.Moy: ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km
-                </div>
-                <div style="font-size:0.7rem; color:#888; font-weight:normal">
-                    σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
-                </div>
-             `;
-        }
-
-        return `
-            <div class="pool-card" data-poule-index="${pi}">
-                <div class="pool-card-head">
-                    <span class="pool-dot" style="background:${couleur}"></span>
-                    Poule ${lettre}
-                    <div style="text-align:right; margin-left:auto">
-                        ${statsEnteteHtml}
-                    </div>
-                </div>
-                ${lignes}
-            </div>`;
-      })
-      .join("");
-
-    if (modeEdition) {
-      // Mode édition : listeners swap sur les lignes, pas de listener carte sur les cards
-      attacherListenersEdition();
-      attacherListenersMarqueurs();
-    } else {
-      // Mode normal : listener highlight carte sur les cards uniquement
-      document.querySelectorAll(".pool-card").forEach((card, i) => {
-        card.addEventListener("click", () => {
-          highlightPoule(i);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      });
-    }
-  }
-  /* ── INIT ───────────────────────────────────────────────────────────────── */
-  updateTitre();
-  renderStepper();
-  afficherErreurs();
-
-  setTimeout(() => map.invalidateSize(), 100);
-
-  /* ── RESTAURATION ───────────────────────────────────────────────────────── */
-  const cle1 = `${config.categorie}-${config.genre}-${config.niveauActuel}`;
-  const poulesStockees = localStorage.getItem(cle1);
-  const cle2 = `csv_equipes_niveau${config.niveauActuel}`;
-  const equipesStockees = localStorage.getItem(cle2);
-
-  if (poulesStockees) {
-    try {
-      //const poules = JSON.parse(poulesStockees);
-      poulesActuelles = poulesStockees ? JSON.parse(poulesStockees) : [];
-      if (poulesActuelles.length > 0) {
-        document.getElementById("nb_poules").value = poulesActuelles.length;
-        document.getElementById("nb_max_equipes").value = Math.max(
-          ...poulesActuelles.map((p) => p.nb_max),
-        );
-
-        equipesActuelles = equipesStockees ? JSON.parse(equipesStockees) : [];
-        afficherCarte(equipesActuelles);
-        afficherPoules();
-        highlightToutesLesPoules();
-
-        const csvStocke = localStorage.getItem(
-          `csv_equipes_niveau${config.niveauActuel}`,
-        );
-        const csvNom = localStorage.getItem(
-          `csv_nom_niveau${config.niveauActuel}`,
-        );
-
-        if (csvStocke && csvNom) {
-          const blob = new Blob([csvStocke], { type: "text/csv" });
-          const file = new File([blob], csvNom, { type: "text/csv" });
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          fileInput.files = dt.files;
-          fileLabel.innerHTML = `✓ ${csvNom}`;
-        }
-        toast(`Poules déjà générées pour ce niveau`, "info");
-      }
-    } catch (err) {
-      console.warn("Erreur lors de la restauration des poules :", err);
-    }
-  }
-});
