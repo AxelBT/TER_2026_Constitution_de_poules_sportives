@@ -27,22 +27,18 @@
 <div class="dashboard">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <!-- SIDEBAR -->
+<aside class="sidebar">
 
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Récapitulatif</span>
-                <span class="badge" id="badge-recap">0 niveau(x)</span>
-            </div>
-            <div class="panel-body">
-                <p class="recap-intro">Toutes les poules générées pour ce championnat.</p>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Exporter les poules</span>
+        </div>
+        <div class="panel-body">
 
-                <!-- Stats globales -->
-                <div class="stats-grid" id="stats-globales"></div>
-
-
-                <!-- Bouton export Excel -->
-                <button class="btn-generate" id="btn-export" style="margin-top: var(--space-md)">
+            <!-- Export -->
+            <div class="export-section">
+                <button class="btn-generate" id="btn-export-excel">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
@@ -50,18 +46,29 @@
                     </svg>
                     Exporter en Excel
                 </button>
+                <button class="btn-generate btn-generate--alt" id="btn-export-csv">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="8" y1="13" x2="16" y2="13"/>
+                        <line x1="8" y1="17" x2="16" y2="17"/>
+                    </svg>
+                    Exporter en CSV
+                </button>
             </div>
-        </div>
 
-        <!-- Navigation -->
-        <div class="nav-row">
-            <button class="btn-nav-prev" id="btn-prev">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                Retour
-            </button>
         </div>
+    </div>
 
-    </aside>
+    <!-- Navigation -->
+    <div class="nav-row">
+        <button class="btn-nav-prev" id="btn-prev">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            Retour
+        </button>
+    </div>
+
+</aside>
 
     <!-- MAIN -->
     <main class="main-area">

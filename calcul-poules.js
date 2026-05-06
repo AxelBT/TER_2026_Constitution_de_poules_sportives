@@ -1,4 +1,4 @@
-import { toast } from "./toast.js";
+import { toast,afficherErreur } from "./toast.js";
 
 let config = JSON.parse(localStorage.getItem("championnatConfig"));
 const clubs = JSON.parse(localStorage.getItem("clubs"));
@@ -91,9 +91,9 @@ export async function traiterCSV(contenu) {
     .map(([cle, _]) => cle);
 
   if (colonnesManquantes.length > 0) {
-    toast(
-      `Colonnes introuvables dans le fichier : ${colonnesManquantes.join(", ")}`,
-      "error",
+    afficherErreur(
+      "Fichier invalide",
+      `Les colonnes suivantes sont introuvables : ${colonnesManquantes.join(", ")}. Vérifiez que vous déposez le bon fichier.`,
     );
     return { succes: false, tableau: [] };
   }
@@ -113,7 +113,16 @@ export async function traiterCSV(contenu) {
 
     const verifier_type = determinerType(type);
     if (!verifier_type) {
-      toast(`Type inconnu ligne ${i + 1} : "${type}"`, "error");
+      if(type!=="")
+      afficherErreur(
+        "Type d'équipe inconnu",
+        `Ligne ${i + 1} : le type "${type}" n'est pas reconnu. Les valeurs acceptées sont "Club" et "Coopération Territoriale Club".`,
+      );
+      else
+        afficherErreur(
+        "Type d'équipe inconnu",
+        `Ligne ${i + 1} : précisez un type. Les valeurs acceptées sont "Club" et "Coopération Territoriale Club".`,
+      );
       return { succes: false, tableau: [] };
     }
     const estCTC = verifier_type === "CTC";
@@ -127,7 +136,10 @@ export async function traiterCSV(contenu) {
     if (config.mode === "niveau" && !statut) champManquant = true;
 
     if (champManquant) {
-      toast(`Données incomplètes :  ligne ${i + 1}`, "error");
+      afficherErreur(
+        "Données incomplètes",
+        `Ligne ${i + 1} : certains champs obligatoires sont manquants. Vérifiez le contenu de cette ligne dans votre fichier.`,
+      );
       return { succes: false, tableau: [] };
     }
 
@@ -140,19 +152,19 @@ export async function traiterCSV(contenu) {
 
     // vérifier que pour le même numclub on a toujours le même nomclub
     if (!verifierCoherenceClub(data, numClub, nomClub)) {
-      toast(
-        `Incohérence : le numéro ${numClub} correspond à deux noms de clubs différents.`,
-        "error",
+      afficherErreur(
+        "Incohérence dans le fichier",
+        `Le numéro ${numClub} correspond à deux noms de clubs différents. Un même numéro doit toujours avoir le même nom.`,
       );
       return { succes: false, tableau: [] };
     }
 
     if (estCTC) {
       if (!verifierCoherenceCTC(data, ctcNum, ctcNom)) {
-        toast(
-          `Incohérence : le numéro ${ctcNum} correspond à deux noms de CTC différents.`,
-          "error",
-        );
+        afficherErreur(
+    "Incohérence dans le fichier",
+    `Le numéro ${numClub} correspond à deux noms de CTC différents. Un même numéro doit toujours avoir le même nom.`
+);
         return { succes: false, tableau: [] };
       }
     }
@@ -402,7 +414,6 @@ function choisirMeilleurePoule(poules, equipe) {
 
     return meilleure;
 }*/
-
 
 export function ajouterEquipeDansPoule(poule, equipe) {
   poule.equipes.push(equipe);

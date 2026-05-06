@@ -50,6 +50,17 @@ export function toast(msg, type = "success") {
   }, duree);
 }
 
+export function afficherErreur(titre, message) {
+    const overlay = document.getElementById("modal-erreur");
+    document.getElementById("modal-erreur-titre").textContent = titre;
+    document.getElementById("modal-erreur-message").textContent = message;
+    overlay.style.display = "flex";
+
+    document.getElementById("modal-erreur-btn").onclick = () => {
+      overlay.style.display = "none";
+    };
+  }
+
 
 /*export function toast(msg, type = "success") {
     const el = document.createElement("div");
