@@ -2,7 +2,7 @@ import { distance } from "./calcul-poules.js";
 import { toast } from "./toast.js";
 document.addEventListener("DOMContentLoaded", () => {
   const config = JSON.parse(localStorage.getItem("championnatConfig"));
-  
+
   const PALETTE = [
     "#0abbef",
     "#2563eb",
@@ -131,8 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  
-
   function afficherNiveau(niveauData) {
     const isModeNiveau = config.mode === "niveau";
     console.log("Affichage du niveau", niveauData.niveau, "Mode:", config.mode);
@@ -156,8 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return acc;
         }, 0);
         const lignes = poule.equipes
-          .map(
-            (e) =>{
+          .map((e) => {
             let prefixeHtml = "";
             const statut = (e.statut_niveau || "").toLowerCase();
             if (isModeNiveau) {
@@ -183,8 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
               prefixeHtml = `<span class="pool-team-dot" style="flex-shrink:0; background:${couleur}"></span>`;
             }
-              
-            return  `
+
+            return `
                 <div class="pool-team-row">
                     ${prefixeHtml}
                     <span class="pool-team-name">
@@ -192,8 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
                     <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} km</span>
                 </div>
-            `;}
-          )
+            `;
+          })
           .join("");
 
         // Ajout de l'exempt si la poule est incomplète
@@ -207,7 +204,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <span class="pool-team-club">-</span>
                     </div>`;
         }
-        const affichagePoids = difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+        const affichagePoids =
+          difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
         return `
             <div class="pool-card">
                 <div class="pool-card-head">
@@ -220,10 +218,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-size:0.7rem; color:#888; font-weight:normal">
                             σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
                         </div>
-                        ${isModeNiveau ? `
+                        ${
+                          isModeNiveau
+                            ? `
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
               Poids : ${affichagePoids}
-            </div>` : ""}
+            </div>`
+                            : ""
+                        }
                     </div>
                 </div>
                 ${lignes}${exempt}
@@ -291,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Créer la feuille
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      
+
       // Largeurs de colonnes
       ws["!cols"] = [{ wch: 56 }, { wch: 20 }, { wch: 38 }];
 
@@ -375,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Feuille récap globale
-    /*const recapRows = [
+/*const recapRows = [
       [`Récapitulatif — ${config.categorie.toUpperCase()} ${config.genre}`],
       [],
       [
@@ -418,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     XLSX.utils.book_append_sheet(wb, wsRecap, "Récapitulatif");*/
 
-  /*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
+/*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
     const container = document.getElementById("niveau-selector");
     container.innerHTML = niveauxData
       .map(({ niveau, poules }) => {

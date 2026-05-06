@@ -111,6 +111,87 @@
             </div>
           </div>
 
+          <!-- Type de distance — affiché uniquement si critère = Distance -->
+          <div class="form-group" id="distance-type-group">
+            <label>Type de distance</label>
+            <div class="toggle-container">
+              <input
+                type="radio"
+                name="distance-type"
+                id="dist-vol-oiseau"
+                class="toggle-input"
+                value="vol_oiseau"
+                checked
+              />
+              <label for="dist-vol-oiseau" class="toggle-label">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M16 7h6v6" />
+                  <path d="M22 7 13.5 15.5 8.5 10.5 2 17" />
+                </svg>
+                À vol d'oiseau
+              </label>
+              <input
+                type="radio"
+                name="distance-type"
+                id="dist-voiture"
+                class="toggle-input"
+                value="voiture"
+              />
+              <label for="dist-voiture" class="toggle-label">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 17h2v-3.34a4 4 0 0 0-1.17-2.83l-1.24-1.24A2 2 0 0 0 17.17 9H6.83a2 2 0 0 0-1.42.59L4.17 10.83A4 4 0 0 0 3 13.66V17h2" />
+                  <circle cx="7" cy="17" r="2" />
+                  <circle cx="17" cy="17" r="2" />
+                  <path d="M5 9l1.5-4.5A2 2 0 0 1 8.4 3h7.2a2 2 0 0 1 1.9 1.5L19 9" />
+                </svg>
+                En voiture
+              </label>
+            </div>
+
+            <!-- Avertissement affiché uniquement quand "voiture" est sélectionné -->
+            <div class="file-notice file-notice-warning" id="warning-voiture" style="display:none;">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>
+                <strong>Calcul long :</strong> les distances routières sont obtenues
+                via l'API IGN avec une limite de 5 requêtes/seconde.
+                Comptez environ <strong>30 secondes par tranche de 10 clubs</strong>
+                dans un même niveau. Le calcul est effectué au moment de la génération
+                des poules de chaque niveau.
+              </span>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Liste des clubs (Format CSV)</label>
             <div class="drop-zone" id="drop-zone">
@@ -149,7 +230,7 @@
                 Le fichier CSV doit inclure les colonnes
                 <code>latitude</code> et <code>longitude</code> pour chaque
                 club. Vous pouvez géocoder votre fichier au préalable via
-                <a
+                
                   href="https://adresse.data.gouv.fr/csv"
                   target="_blank"
                   rel="noopener"
@@ -157,10 +238,12 @@
                 >.
               </span>
             </div>
-          </div><div id="loader" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding: 3rem;">
-  <div class="spinner"></div>
-  <p class="loader-label">Récupération des adresses des poules<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
-</div>
+          </div>
+
+          <div id="loader" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding: 3rem;">
+            <div class="spinner"></div>
+            <p class="loader-label">Récupération des coordonnées des clubs<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+          </div>
 
           <button type="submit" class="btn-primary">
             Passer à la configuration des niveaux →
@@ -168,7 +251,22 @@
         </form>
       </div>
     </div>
+<script>
+  (function () {
+    const warningVoiture = document.getElementById("warning-voiture");
+    const radioVoiture = document.getElementById("dist-voiture");
+    const radioVolOiseau = document.getElementById("dist-vol-oiseau");
 
-    <script type="module" src="config.js"></script>
+    function majWarningVoiture() {
+      warningVoiture.style.display = radioVoiture.checked ? "flex" : "none";
+    }
+
+    radioVoiture.addEventListener("change", majWarningVoiture);
+    radioVolOiseau.addEventListener("change", majWarningVoiture);
+
+    majWarningVoiture();
+  })();
+</script>
+
   </body>
 </html>

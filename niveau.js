@@ -13,6 +13,12 @@ import { genererPoulesNiveau } from "./calcul-poules-niveau.js";
 
 import { toast } from "./toast.js";
 
+import {
+  calculerEtStockerMatrice,
+  chargerMatrice,
+  extraireClubsUtilises,
+} from "./matrice-distances.js";
+
 let poulesActuelles = [];
 let equipesActuelles = [];
 
@@ -33,6 +39,41 @@ function createPinIcon(color = "#888780", opacity = 0.5) {
     iconAnchor: [14, 38],
     popupAnchor: [0, -38],
   });
+}
+const loader = document.getElementById("loader-niveau");
+const loaderMessage = document.getElementById("loader-message");
+
+function showLoader(msg = "Calcul en cours…") {
+  loaderMessage.textContent = msg;
+  loader.style.display = "flex";
+}
+function hideLoader() {
+  loader.style.display = "none";
+}
+
+async function preparerNiveau(equipes, niveauActuel) {
+  const tousLesClubs = JSON.parse(localStorage.getItem("clubs") || "[]");
+  const storageKey = `matriceDistances:niveau${niveauActuel}`;
+
+  let matrice = chargerMatrice(storageKey);
+  if (matrice) {
+    console.log(`[niveau] Matrice du niveau ${niveauActuel} déjà remplie.`);
+    console.table(matrice);
+    return matrice;
+  }
+  console.log([
+    `[niveau] Liste des équpess du niveau ${niveauActuel} :`,
+    equipes,
+  ]);
+  const clubsUtilises = extraireClubsUtilises(tousLesClubs, equipes);
+
+  showLoader("Calcul des distances routières…");
+  try {
+    matrice = await calculerEtStockerMatrice(clubsUtilises, storageKey);
+    console.table(matrice);
+  } finally {
+    hideLoader();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -215,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Traiter immédiatement
       const { succes, tableau } = await traiterCSV(contenu);
+      await preparerNiveau(tableau, config.niveauActuel);
 
       if (!succes) {
         equipesActuelles = []; //
@@ -1076,7 +1118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="pool-card-head">
             <span class="pool-dot" style="background:${couleur}"></span>
             Poule ${lettre}
-            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="visibility:hidden"' : ''}>
+            <span class="pool-card-hint" data-poule-index="${pi}" ${modeEdition ? 'style="visibility:hidden"' : ""}>
                 voir sur carte
             </span>
             <div style="text-align:right;">
