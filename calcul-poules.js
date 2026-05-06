@@ -10,6 +10,8 @@ if (!config) {
   // return;
 }
 
+import { distance } from "./matrice-distances.js";
+
 function trouverNumeroEquipeDisponible(data, numClub, numEquipe, estCTC) {
   let num = parseInt(numEquipe);
 
@@ -211,20 +213,6 @@ export async function traiterCSV(contenu) {
 }
 
 // Distance Haversine entre deux équipes (en km)
-export function distance(e1, e2) {
-  const R = 6371;
-  const dLat = ((e2.latitude - e1.latitude) * Math.PI) / 180;
-  const dLon = ((e2.longitude - e1.longitude) * Math.PI) / 180;
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((e1.latitude * Math.PI) / 180) *
-      Math.cos((e2.latitude * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 // Barycentre géographique d'un tableau d'équipes
 export function calculerBarycentre(equipes) {
