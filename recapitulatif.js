@@ -2,7 +2,7 @@ import { distance } from "./calcul-poules.js";
 import { toast } from "./toast.js";
 document.addEventListener("DOMContentLoaded", () => {
   const config = JSON.parse(localStorage.getItem("championnatConfig"));
-  
+
   const PALETTE = [
     "#0abbef",
     "#2563eb",
@@ -64,52 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return resultat;
   }
 
-  function calculerStatsGlobales(niveauxData) {
-    const totalNiveaux = niveauxData.length;
-    const totalPoules = niveauxData.reduce((s, n) => s + n.poules.length, 0);
-    const totalEquipes = niveauxData.reduce(
-      (s, n) => s + n.poules.reduce((ss, p) => ss + p.equipes.length, 0),
-      0,
-    );
-    const distMoyGlobal =
-      niveauxData.reduce((s, n) => {
-        const moy =
-          n.poules.reduce(
-            (ss, p) => ss + parseFloat(p.distance_moyenne || 0),
-            0,
-          ) / (n.poules.length || 1);
-        return s + moy;
-      }, 0) / (totalNiveaux || 1);
-
-    return { totalNiveaux, totalPoules, totalEquipes, distMoyGlobal };
-  }
-
-  function afficherStatsGlobales(stats) {
-    document.getElementById("badge-recap").textContent =
-      `${stats.totalNiveaux} niveau(x)`;
-
-    document.getElementById("stats-globales").innerHTML = `
-            <div class="stat-card">
-                <div class="stat-card-label">Niveaux</div>
-                <div class="stat-card-value">${stats.totalNiveaux}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Poules</div>
-                <div class="stat-card-value">${stats.totalPoules}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Équipes</div>
-                <div class="stat-card-value">${stats.totalEquipes}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Dist. moy.</div>
-                <div class="stat-card-value">
-                    ${stats.distMoyGlobal.toFixed(0)}
-                    <span class="stat-card-unit">km</span>
-                </div>
-            </div>
-        `;
-  }
 
   function renderTabs(niveauxData, niveauActif, onSelect) {
     const bar = document.getElementById("tabs-bar");
@@ -130,8 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
-
-  
 
   function afficherNiveau(niveauData) {
     const isModeNiveau = config.mode === "niveau";
@@ -156,8 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return acc;
         }, 0);
         const lignes = poule.equipes
-          .map(
-            (e) =>{
+          .map((e) => {
             let prefixeHtml = "";
             const statut = (e.statut_niveau || "").toLowerCase();
             if (isModeNiveau) {
@@ -183,8 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
               prefixeHtml = `<span class="pool-team-dot" style="flex-shrink:0; background:${couleur}"></span>`;
             }
-              
-            return  `
+
+            return `
                 <div class="pool-team-row">
                     ${prefixeHtml}
                     <span class="pool-team-name">
@@ -192,8 +143,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
                     <span class="pool-team-club">${parseFloat(e.distance_totale || 0).toFixed(0)} km</span>
                 </div>
-            `;}
-          )
+            `;
+          })
           .join("");
 
         // Ajout de l'exempt si la poule est incomplète
@@ -207,7 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <span class="pool-team-club">-</span>
                     </div>`;
         }
-        const affichagePoids = difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
+        const affichagePoids =
+          difficultePoule > 0 ? `+${difficultePoule}` : difficultePoule;
         return `
             <div class="pool-card">
                 <div class="pool-card-head">
@@ -220,10 +172,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-size:0.7rem; color:#888; font-weight:normal">
                             σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
                         </div>
-                        ${isModeNiveau ? `
+                        ${
+                          isModeNiveau
+                            ? `
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
               Poids : ${affichagePoids}
-            </div>` : ""}
+            </div>`
+                            : ""
+                        }
                     </div>
                 </div>
                 ${lignes}${exempt}
@@ -266,12 +222,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
       poules.forEach((poule, pi) => {
         const lettre = poule.nom || String.fromCharCode(65 + pi);
+        let affichagePoids="";
+        if(config.mode === "niveau"){
+          const difficultePoule = poule.equipes.reduce((acc, e) => {
+          const statut = (e.statut_niveau || "").toLowerCase();
+          if (statut.includes("+") || statut === "montante") return acc - 1;
+          if (statut.includes("-") || statut === "descendante") return acc + 1;
+          return acc;
+        }, 0);
+        affichagePoids=` ---- Poids : ${difficultePoule}`;
+        }
 
         // En-tête de la poule
         rows.push([
           `Poule ${lettre}`,
           "",
-          `Distance moyenne : ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km ---- Écart-type : ${parseFloat(poule.ecart_type || 0).toFixed(0)}`,
+          `Distance moyenne : ${parseFloat(poule.distance_moyenne || 0).toFixed(0)} km ---- Écart-type : ${parseFloat(poule.ecart_type || 0).toFixed(0)}${affichagePoids}`,
         ]);
 
         // En-têtes colonnes
@@ -291,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Créer la feuille
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      
+
       // Largeurs de colonnes
       ws["!cols"] = [{ wch: 56 }, { wch: 20 }, { wch: 38 }];
 
@@ -304,6 +270,50 @@ document.addEventListener("DOMContentLoaded", () => {
     XLSX.writeFile(wb, nomFichier);
     toast("Fichier Excel exporté avec succès.", "success");
   }
+
+  function exporterCSV(niveauxData) {
+    const categorie = config.categorie || "";
+    const genre = config.genre || "";
+    console.log(niveauxData);
+
+    const lignes = [];
+
+    // En-tête
+    lignes.push("Catégorie;Niveau;Poule;N° Équipe;N° Club");
+
+    niveauxData.forEach(({ niveau, poules }) => {
+        poules.forEach((poule) => {
+            const lettrePoule = poule.nom || "";
+
+            poule.equipes.forEach((e) => {
+                const numEquipe = e.numero;
+                const numClub   = e.num_club;
+
+                lignes.push([
+                    categorie,
+                    niveau,
+                    lettrePoule,
+                    numEquipe,
+                    numClub,
+                ].join(";"));
+            });
+        });
+    });
+
+    // Création et téléchargement du fichier
+    const contenu  = lignes.join("\n");
+    const blob     = new Blob(["\uFEFF" + contenu], { type: "text/csv;charset=utf-8;" });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement("a");
+    a.href         = url;
+    a.download     = `poules_${categorie}_${genre}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast("Fichier CSV exporté avec succès.", "success");
+}
 
   document.getElementById("btn-prev").addEventListener("click", () => {
     window.location.href =
@@ -353,14 +363,16 @@ document.addEventListener("DOMContentLoaded", () => {
     afficherNiveau(data);
   }
 
-  const stats = calculerStatsGlobales(niveauxData);
-  afficherStatsGlobales(stats);
-
   selectionnerNiveau(niveauActif);
 
-  document.getElementById("btn-export").addEventListener("click", () => {
+  document.getElementById("btn-export-excel").addEventListener("click", () => {
     exporterExcel(niveauxData);
   });
+
+  document.getElementById("btn-export-csv").addEventListener("click", () => {
+    exporterCSV(niveauxData);
+  });
+  
 
   const niveauxManquants = [];
   for (let n = 1; n <= config.niveaux; n++) {
@@ -374,8 +386,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+
+/*function calculerStatsGlobales(niveauxData) {
+    const totalNiveaux = niveauxData.length;
+    const totalPoules = niveauxData.reduce((s, n) => s + n.poules.length, 0);
+    const totalEquipes = niveauxData.reduce(
+      (s, n) => s + n.poules.reduce((ss, p) => ss + p.equipes.length, 0),
+      0,
+    );
+    const distMoyGlobal =
+      niveauxData.reduce((s, n) => {
+        const moy =
+          n.poules.reduce(
+            (ss, p) => ss + parseFloat(p.distance_moyenne || 0),
+            0,
+          ) / (n.poules.length || 1);
+        return s + moy;
+      }, 0) / (totalNiveaux || 1);
+
+    return { totalNiveaux, totalPoules, totalEquipes, distMoyGlobal };
+  }*/
 // Feuille récap globale
-    /*const recapRows = [
+/*const recapRows = [
       [`Récapitulatif — ${config.categorie.toUpperCase()} ${config.genre}`],
       [],
       [
@@ -417,6 +449,33 @@ document.addEventListener("DOMContentLoaded", () => {
       { wch: 12 },
     ];
     XLSX.utils.book_append_sheet(wb, wsRecap, "Récapitulatif");*/
+
+    /*function afficherStatsGlobales(stats) {
+    document.getElementById("badge-recap").textContent =
+      `${stats.totalNiveaux} niveau(x)`;
+
+    document.getElementById("stats-globales").innerHTML = `
+            <div class="stat-card">
+                <div class="stat-card-label">Niveaux</div>
+                <div class="stat-card-value">${stats.totalNiveaux}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Poules</div>
+                <div class="stat-card-value">${stats.totalPoules}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Équipes</div>
+                <div class="stat-card-value">${stats.totalEquipes}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Dist. moy.</div>
+                <div class="stat-card-value">
+                    ${stats.distMoyGlobal.toFixed(0)}
+                    <span class="stat-card-unit">km</span>
+                </div>
+            </div>
+        `;
+  }*/
 
   /*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
     const container = document.getElementById("niveau-selector");

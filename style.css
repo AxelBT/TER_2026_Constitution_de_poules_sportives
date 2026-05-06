@@ -721,3 +721,16 @@ input[type="number"]::-webkit-outer-spin-button {
         transition-duration: 0.01ms ;
     }
 }
+
+.file-notice-warning {
+  background-color: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+.file-notice-warning svg {
+  color: #ea580c;
+  flex-shrink: 0;
+}
+.file-notice-warning strong {
+  color: #7c2d12;
+}
