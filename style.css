@@ -615,6 +615,11 @@ input[type="number"]::-webkit-outer-spin-button {
     max-width: 360px;
 }
 
+.toast svg {
+  flex-shrink: 0; /* ← le SVG garde toujours sa taille, ne se compresse pas */
+  margin-top: 2px; /* ← léger décalage pour aligner avec la première ligne de texte */
+}
+
 .pool-team-row.selected {
     background: rgba(0, 123, 255, 0.15);
     border: 1px solid var(--clr-primary-400);
