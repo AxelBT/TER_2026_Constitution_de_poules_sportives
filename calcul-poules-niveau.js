@@ -12,7 +12,7 @@ import { distance } from "./matrice-distances.js";
 
 let config = JSON.parse(localStorage.getItem("championnatConfig"));
 
-const ORDRE_STATUTS = ["-", "=", "+"];
+const ORDRE_STATUTS = ["-", "+", "="];
 
 function calculerQuotasParStatut(equipes, nb_poules) {
   const compteurs = { "-": 0, "=": 0, "+": 0 };
@@ -30,8 +30,8 @@ function calculerQuotasParStatut(equipes, nb_poules) {
     const brut = Array.from({ length: nb_poules }, (_, i) =>
       i < reste ? base + 1 : base,
     );
-    const decalage = si % nb_poules;
-    quotas[statut] = brut.slice(decalage).concat(brut.slice(0, decalage));
+    //const decalage = si % nb_poules;
+    quotas[statut] = brut;
   });
 
   return quotas;
@@ -47,6 +47,18 @@ function ajouterEquipeDansPouleNiveau(poule, equipe) {
     return true;
   }
   return false;
+}
+
+//Vérifie que les équipes montantes (+) et descendantes (-) sont en effectifs égaux.
+ 
+ 
+function verifierEquilibreMontantesDescendantes(equipes) {
+    const montantes = equipes.filter(e => e.statut_niveau === "+").length;
+    const descendantes = equipes.filter(e => e.statut_niveau === "-").length;
+    const ecart = Math.abs(montantes - descendantes);
+    const equilibre = montantes === descendantes;
+
+    return equilibre;
 }
 
 // --------- Distribution gloutonne par statut -------------------------
@@ -176,23 +188,19 @@ function optimiserDistances(poules, maxPasses = 20) {
   while (passe < maxPasses) {
     let ameliore = false;
 
-    // Parcourt toutes les paires de poules
     for (let pa = 0; pa < poules.length; pa++) {
       for (let pb = pa + 1; pb < poules.length; pb++) {
         const eqsA = poules[pa].equipes;
         const eqsB = poules[pb].equipes;
 
-        // Parcourt toutes les paires d'équipes (a, b) entre ces poules
         for (let ia = 0; ia < eqsA.length; ia++) {
           for (let ib = 0; ib < eqsB.length; ib++) {
             const eqA = eqsA[ia];
             const eqB = eqsB[ib];
 
-            // Contrainte dure : on n'échange que des équipes de même statut
-            // pour préserver les quotas (et donc l'équilibre sportif déjà construit).
+            
             if (eqA.statut_niveau !== eqB.statut_niveau) continue;
 
-            // Vérifie que l'échange ne viole pas la contrainte de club
             const pouleASansA = {
               ...poules[pa],
               equipes: eqsA.filter((_, k) => k !== ia),
@@ -204,12 +212,10 @@ function optimiserDistances(poules, maxPasses = 20) {
             if (verifierClubDansPoule(pouleASansA, eqB)) continue;
             if (verifierClubDansPoule(pouleBSansB, eqA)) continue;
 
-            // Calcule le gain local : on n'a besoin de comparer que les deux
-            // poules touchées par l'échange, pas tout le championnat.
+       
             const avant =
               sommeDistancesPoule(poules[pa]) + sommeDistancesPoule(poules[pb]);
 
-            // Échange virtuel
             eqsA[ia] = eqB;
             eqsB[ib] = eqA;
 
@@ -217,11 +223,9 @@ function optimiserDistances(poules, maxPasses = 20) {
               sommeDistancesPoule(poules[pa]) + sommeDistancesPoule(poules[pb]);
 
             if (apres < avant) {
-              // On garde l'échange
               scoreCourant = scoreCourant - avant + apres;
               ameliore = true;
             } else {
-              // On annule
               eqsA[ia] = eqA;
               eqsB[ib] = eqB;
             }
@@ -231,13 +235,19 @@ function optimiserDistances(poules, maxPasses = 20) {
     }
 
     passe++;
-    if (!ameliore) break; // optimum local atteint
+    if (!ameliore) break; 
   }
 
   return { poules, score: scoreCourant, passes: passe };
 }
 
 export function genererPoulesNiveau(equipes, nb_poules) {
+  if (!verifierEquilibreMontantesDescendantes(equipes)) {
+    console.warn(
+      "[genererPoulesNiveau] Déséquilibre détecté : le nombre d'équipes montantes (+) et descendantes (-) n'est pas égal. " +
+        "Cela peut entraîner des poules moins équilibrées. Vérifiez la configuration des équipes.",
+    );
+  }
   const niveauActuel = config.niveauActuel || 1;
   const total_equipes = equipes.length;
   const capacites = definirCapacitesPoules(nb_poules, total_equipes);

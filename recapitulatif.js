@@ -1,4 +1,4 @@
-import { distance } from "./calcul-poules.js";
+import { distance } from "./matrice-distances.js";
 import { toast } from "./toast.js";
 document.addEventListener("DOMContentLoaded", () => {
   const config = JSON.parse(localStorage.getItem("championnatConfig"));

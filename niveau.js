@@ -11,7 +11,13 @@ import {
 
 import { genererPoulesNiveau } from "./calcul-poules-niveau.js";
 
-import { toast, afficherErreur } from "./toast.js";
+import { toast } from "./toast.js";
+
+import {
+  calculerEtStockerMatrice,
+  chargerMatrice,
+  extraireClubsUtilises,
+} from "./matrice-distances.js";
 
 let poulesActuelles = [];
 let equipesActuelles = [];
@@ -33,6 +39,41 @@ function createPinIcon(color = "#888780", opacity = 0.5) {
     iconAnchor: [14, 38],
     popupAnchor: [0, -38],
   });
+}
+const loader = document.getElementById("loader-niveau");
+const loaderMessage = document.getElementById("loader-message");
+
+function showLoader(msg = "Calcul en cours…") {
+  loaderMessage.textContent = msg;
+  loader.style.display = "flex";
+}
+function hideLoader() {
+  loader.style.display = "none";
+}
+
+async function preparerNiveau(equipes, niveauActuel) {
+  const tousLesClubs = JSON.parse(localStorage.getItem("clubs") || "[]");
+  const storageKey = `matriceDistances:niveau${niveauActuel}`;
+
+  let matrice = chargerMatrice(storageKey);
+  if (matrice) {
+    console.log(`[niveau] Matrice du niveau ${niveauActuel} déjà remplie.`);
+    console.table(matrice);
+    return matrice;
+  }
+  console.log([
+    `[niveau] Liste des équpess du niveau ${niveauActuel} :`,
+    equipes,
+  ]);
+  const clubsUtilises = extraireClubsUtilises(tousLesClubs, equipes);
+
+  showLoader("Calcul des distances routières…");
+  try {
+    matrice = await calculerEtStockerMatrice(clubsUtilises, storageKey);
+    console.table(matrice);
+  } finally {
+    hideLoader();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -215,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Traiter immédiatement
       const { succes, tableau } = await traiterCSV(contenu);
+      await preparerNiveau(tableau, config.niveauActuel);
 
       if (!succes) {
         equipesActuelles = []; //
@@ -261,10 +303,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // garantir qu'on a au moins une poule saturée et au plus un exempts dans les autres poules
     if (nb_equipes <= nb_poules * (nb_max - 1)) {
       afficherErreur(
-        "Taille des poules trop grande",
-        `Avec ${nb_poules} poules de ${nb_max} équipes, toutes les poules auraient au moins ` +
-          `${nb_max - Math.ceil(nb_equipes / nb_poules)} place(s) vide(s). ` +
-          `Réduisez le nombre de poules ou la taille maximale par poule.`,
+        "Paramètres incohérents",
+        "Trop peu d'équipes pour la configuration choisie. Veuillez réduire le nombre de poules ou la taille maximale.",
       );
       return;
     }
@@ -377,6 +417,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
+  function afficherErreur(titre, message) {
+    const overlay = document.getElementById("modal-erreur");
+    document.getElementById("modal-erreur-titre").textContent = titre;
+    document.getElementById("modal-erreur-message").textContent = message;
+    overlay.style.display = "flex";
+
+    document.getElementById("modal-erreur-btn").onclick = () => {
+      overlay.style.display = "none";
+    };
+  }
 
   function afficherClubIngores() {
     const clubsIgnores = JSON.parse(
@@ -915,10 +965,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Toast warn (pas error) — léger et non bloquant
-    toast(
-      "Deux équipes d'un même club ne peuvent pas être dans la même poule.",
-      "warn",
-    );
+    toast("Conflit de club — même club déjà présent dans cette poule", "warn");
   }
 
   function signalerErreurExempt(pouleIndex) {
