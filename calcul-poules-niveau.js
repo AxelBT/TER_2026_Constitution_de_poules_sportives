@@ -49,17 +49,6 @@ function ajouterEquipeDansPouleNiveau(poule, equipe) {
   return false;
 }
 
-//Vérifie que les équipes montantes (+) et descendantes (-) sont en effectifs égaux.
- 
- 
-function verifierEquilibreMontantesDescendantes(equipes) {
-    const montantes = equipes.filter(e => e.statut_niveau === "+").length;
-    const descendantes = equipes.filter(e => e.statut_niveau === "-").length;
-    const ecart = Math.abs(montantes - descendantes);
-    const equilibre = montantes === descendantes;
-
-    return equilibre;
-}
 
 // --------- Distribution gloutonne par statut -------------------------
 
@@ -85,8 +74,7 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
         );
 
         if (idxChoisi === -1) {
-          // Contrainte club impossible à respecter — on ne relâche PAS
-          // On log les détails et on passe à la poule suivante
+        
           const clubsEnConflit = [
             ...new Set(restantes.map((eq) => eq.nom_club)),
           ];
@@ -163,8 +151,7 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
 }
 
 function sommeDistancesPoule(poule) {
-  // Somme des distances entre toutes les paires d'équipes de la poule
-  // (proxy de la distance totale parcourue lors d'un championnat aller-retour).
+  
   let total = 0;
   const eqs = poule.equipes;
   for (let i = 0; i < eqs.length; i++) {
@@ -242,12 +229,6 @@ function optimiserDistances(poules, maxPasses = 20) {
 }
 
 export function genererPoulesNiveau(equipes, nb_poules) {
-  if (!verifierEquilibreMontantesDescendantes(equipes)) {
-    console.warn(
-      "[genererPoulesNiveau] Déséquilibre détecté : le nombre d'équipes montantes (+) et descendantes (-) n'est pas égal. " +
-        "Cela peut entraîner des poules moins équilibrées. Vérifiez la configuration des équipes.",
-    );
-  }
   const niveauActuel = config.niveauActuel || 1;
   const total_equipes = equipes.length;
   const capacites = definirCapacitesPoules(nb_poules, total_equipes);
