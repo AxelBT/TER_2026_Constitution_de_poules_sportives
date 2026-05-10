@@ -289,7 +289,7 @@ body {
 .calendrier-table tr:last-child td { border-bottom: none; }
 .calendrier-table tr:hover td { background: var(--clr-surface-50); }
 
-.td-domicile { font-weight: 600; color: var(--clr-surface-800); }
+.td-domicile  { font-weight: 600; color: var(--clr-surface-800); }
 .td-exterieur { color: var(--clr-surface-500); }
 .td-vs {
     font-size: .68rem;
@@ -297,6 +297,22 @@ body {
     color: var(--clr-surface-300);
     text-align: center;
     width: 30px;
+}
+.td-numero {
+    font-weight: 800;
+    font-size: .9rem;
+    color: var(--clr-primary-600);
+    text-align: center;
+    width: 60px;
+}
+.td-club {
+    font-size: .73rem;
+    color: var(--clr-surface-400);
+}
+.td-souhait {
+    font-size: .73rem;
+    color: var(--clr-surface-400);
+    font-style: italic;
 }
 
 /* ── Modale ── */

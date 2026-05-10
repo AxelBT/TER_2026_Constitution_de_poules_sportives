@@ -239,6 +239,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     reader.readAsText(file);
+    e.target.value = "";
+    if(poulesActuelles.length>0){
+      reinitialiserAffichagePoules();
+      document.getElementById("nb_poules").value="";
+      document.getElementById("nb_max_equipes").value="";
+    }
   });
 
   btnGenerer.addEventListener("click", () => {
@@ -541,51 +547,6 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   }
-  /*function highlightPoule(pouleIndex) {
-    // Reclic sur la même poule → reset
-    if (highlightPoule._actif === pouleIndex) {
-      highlightPoule._actif = null;
-      highlightToutesLesPoules();
-      // fermer tous les tooltips
-      markers.forEach((m) => m.closeTooltip());
-      document
-        .querySelectorAll(".pool-card")
-        .forEach((c) => c.classList.remove("pool-card--active"));
-      return;
-    }
-
-    highlightPoule._actif = pouleIndex;
-    const poule = poulesActuelles[pouleIndex];
-    const couleur = PALETTE[pouleIndex % PALETTE.length];
-    const idsPoule = new Set(poule.equipes.map((e) => e.id));
-
-    markers.forEach((m) => {
-      if (idsPoule.has(m.equipeId)) {
-        m.setIcon(createPinIcon(couleur, 1));
-        m.setZIndexOffset(1000);
-        m.openTooltip();
-      } else {
-        m.setIcon(createPinIcon("#888780", 0.2));
-        m.setZIndexOffset(0);
-        m.closeTooltip();
-      }
-    });
-
-    document.querySelectorAll(".pool-card").forEach((card, i) => {
-      card.classList.toggle("pool-card--active", i === pouleIndex);
-    });
-
-    // Recentre sur les équipes de la poule
-    const pBounds = markers
-      .filter((m) => idsPoule.has(m.equipeId))
-      .map((m) => m.getLatLng());
-    if (pBounds.length) {
-      map.fitBounds(
-        pBounds.map((ll) => [ll.lat, ll.lng]),
-        { padding: [60, 60], maxZoom: 10 },
-      );
-    }
-  }*/
 
   function highlightToutesLesPoules() {
     const equipeIdToCouleur = new Map();
@@ -1098,6 +1059,20 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   }
+
+  function reinitialiserAffichagePoules() {
+    poulesActuelles = []; 
+    localStorage.setItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`,JSON.stringify(poulesActuelles));
+
+    // Vider les méta-données (titres, badges, boutons)
+    const meta = document.getElementById("pools-meta");
+    const btnEchange = document.getElementById("conteneur-btn-echange");
+    if (meta) meta.textContent = "";
+    if (btnEchange) btnEchange.innerHTML = "";
+
+    // Elle va détecter que poulesActuelles est vide et affichera le SVG
+    afficherPoules();
+}
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
   renderStepper();
@@ -1145,6 +1120,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
+
+ /*function highlightPoule(pouleIndex) {
+    // Reclic sur la même poule → reset
+    if (highlightPoule._actif === pouleIndex) {
+      highlightPoule._actif = null;
+      highlightToutesLesPoules();
+      // fermer tous les tooltips
+      markers.forEach((m) => m.closeTooltip());
+      document
+        .querySelectorAll(".pool-card")
+        .forEach((c) => c.classList.remove("pool-card--active"));
+      return;
+    }
+
+    highlightPoule._actif = pouleIndex;
+    const poule = poulesActuelles[pouleIndex];
+    const couleur = PALETTE[pouleIndex % PALETTE.length];
+    const idsPoule = new Set(poule.equipes.map((e) => e.id));
+
+    markers.forEach((m) => {
+      if (idsPoule.has(m.equipeId)) {
+        m.setIcon(createPinIcon(couleur, 1));
+        m.setZIndexOffset(1000);
+        m.openTooltip();
+      } else {
+        m.setIcon(createPinIcon("#888780", 0.2));
+        m.setZIndexOffset(0);
+        m.closeTooltip();
+      }
+    });
+
+    document.querySelectorAll(".pool-card").forEach((card, i) => {
+      card.classList.toggle("pool-card--active", i === pouleIndex);
+    });
+
+    // Recentre sur les équipes de la poule
+    const pBounds = markers
+      .filter((m) => idsPoule.has(m.equipeId))
+      .map((m) => m.getLatLng());
+    if (pBounds.length) {
+      map.fitBounds(
+        pBounds.map((ll) => [ll.lat, ll.lng]),
+        { padding: [60, 60], maxZoom: 10 },
+      );
+    }
+  }*/
 
 /*if (poulesStockees) {
     try {

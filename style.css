@@ -464,6 +464,7 @@ input[type="number"]::-webkit-outer-spin-button {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    margin-bottom: 0;
 
     /* Reprise de VOTRE typographie */
     font-family: var(--ff-body);
