@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lignes = [];
 
     // En-tête
-    lignes.push("Catégorie,Niveau,Poule,N° Équipe,N° Club");
+    lignes.push("Catégorie,Niveau,Poule,Équipe,Club,N° Équipe");
 
     niveauxData.forEach(({ niveau, poules }) => {
       const nb_max_equipes = Math.max(
@@ -301,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ].join(","));
             });
             if(poule.equipes.length<nb_max_equipes){
-              lignes.push([categorie,niveau,lettrePoule,"Exempt","PDL0000000"].join(","));
+              lignes.push([categorie,niveau,lettrePoule,"Exempt","—"].join(","));
             }
         });
     });

@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length > 0) {
         fileLabel.innerText = "Fichier prêt : " + e.target.files[0].name;
+        document.getElementById("file-limit").innerText="";
         const reader = new FileReader();
 
         reader.onload = function (event) {

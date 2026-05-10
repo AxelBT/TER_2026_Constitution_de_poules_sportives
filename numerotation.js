@@ -2,10 +2,9 @@ import { toast, afficherErreur } from "./toast.js";
 
 //let ClubsMap = {};
 let Souhaits = {};
-let Niveaux  = {};
+let Niveaux = {};
 
 document.addEventListener("DOMContentLoaded", () => {
-
   /* ============================================================
      NAVIGATION
   ============================================================ */
@@ -26,10 +25,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     for (let i = 0; i < lignes.length; i++) {
       if (lignes[i].trim() === "") continue;
-      const [numClub, souhait] = lignes[i].split(",").map(c => c.trim());
+      const [numClub, souhait] = lignes[i].split(",").map((c) => c.trim());
 
-      if (!["sans_preference", "synchronise", "reparti"].includes(souhait.toLowerCase())) {
-        return { succes: false, message: `Souhait inconnu ligne ${i + 2} : "${souhait}"` };
+      if (
+        !["sans_preference", "synchronise", "reparti"].includes(
+          souhait.toLowerCase(),
+        )
+      ) {
+        return {
+          succes: false,
+          message: `Souhait inconnu ligne ${i + 2} : "${souhait}"`,
+        };
       }
       if (numClub) souhaits[numClub.trim()] = souhait.toLowerCase();
     }
@@ -78,23 +84,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     for (let i = 0; i < lignes.length; i++) {
       if (lignes[i].trim() === "") continue;
-      const [categorie, niveau, poule, nomEquipe, numClub] = lignes[i].split(",");
-      
-      if (!numClub) return{ succes: false, message: "Veuillez déposer un fichier valide" };
+      const [categorie, niveau, poule, nomEquipe, numClub] =
+        lignes[i].split(",");
+
+      if (!numClub)
+        return { succes: false, message: "Veuillez déposer un fichier valide" };
 
       const niv = parseInt(niveau?.trim());
       if (isNaN(niv)) continue;
 
-      if (!niveaux[niv]) niveaux[niv] = { categorie: categorie?.trim(), poules: {} };
-      if (!niveaux[niv].poules[poule?.trim()]) niveaux[niv].poules[poule?.trim()] = [];
+      if (!niveaux[niv])
+        niveaux[niv] = { categorie: categorie?.trim(), poules: {} };
+      if (!niveaux[niv].poules[poule?.trim()])
+        niveaux[niv].poules[poule?.trim()] = [];
 
       niveaux[niv].poules[poule?.trim()].push({
-        nomEquipe:      nomEquipe?.trim(),
-        numClub:        numClub?.trim(),
+        nomEquipe: nomEquipe?.trim(),
+        numClub: numClub?.trim(),
         numeroAttribue: null,
       });
     }
-    return {succes : true, donnees : niveaux};
+    return { succes: true, donnees: niveaux };
   }
 
   /* ============================================================
@@ -104,12 +114,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const PoulesInput = document.getElementById("file-poules");
   const PoulesLabel = document.getElementById("label-poules");
 
-  PoulesInput?.addEventListener("change", e => {
+  PoulesInput?.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       const contenu = evt.target.result;
       const resultat = parsePoules(contenu);
       if (!resultat.succes) {
@@ -117,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       //ClubsMap = resultat.donnees;
-      Niveaux  = resultat.donnees;
+      Niveaux = resultat.donnees;
       PoulesLabel.innerHTML = `${file.name}`;
       //PoulesLabel.style.color = "#16a34a";
       //console.log("ClubsMap :", ClubsMap);
@@ -130,12 +140,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const SouhaitsInput = document.getElementById("file-souhaits");
   const SouhaitsLabel = document.getElementById("label-souhaits");
 
-  SouhaitsInput?.addEventListener("change", e => {
+  SouhaitsInput?.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       const contenu = evt.target.result;
       const resultat = parseSouhaits(contenu);
       if (!resultat.succes) {
@@ -159,22 +169,22 @@ document.addEventListener("DOMContentLoaded", () => {
    * Vérifie que toutes les poules (tous niveaux confondus) ont la même taille
    */
   function verifierTailleUniforme() {
-    let tailleReference  = -1;
-    let nomPremierePoule = "";
+    let tailleReference = -1;
+    let NomPremierePoule = "";
 
     for (const niv in Niveaux) {
       for (const nomPoule in Niveaux[niv].poules) {
         const taille = Niveaux[niv].poules[nomPoule].length;
         if (tailleReference === -1) {
-          tailleReference  = taille;
+          tailleReference = taille;
           NomPremierePoule = `Poule ${nomPoule} niveau ${niv}`;
           continue;
         }
         if (taille !== tailleReference) {
           return {
             valide: false,
-            titre:   "Conflit de taille de poules",
-            message: `La poule ${nomPoule} du niveau ${niv} a ${taille} équipe(s), alors que ${premierePouleNom} en a ${tailleReference}. Toutes les poules doivent avoir la même taille.`,
+            titre: "Conflit de taille de poules",
+            message: `La poule ${nomPoule} du niveau ${niv} a ${taille} équipe(s), alors que ${NomPremierePoule} en a ${tailleReference}. Toutes les poules doivent avoir la même taille.`,
           };
         }
       }
@@ -194,7 +204,6 @@ document.addEventListener("DOMContentLoaded", () => {
    *   3. Clubs sans souhait + exempts → numéros restants libres
    */
   function attribuerNumeros(T) {
-
     // slots[idUniquePoule] = Set des numéros déjà pris dans cette poule
     const slotsOccupes = {};
     for (const niv in Niveaux) {
@@ -250,7 +259,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (let n = 1; n <= T; n++) {
         // Ce numéro doit être libre dans toutes les poules où ce club a une équipe
-        const librePartout = equipesClub.every(({ idPoule }) => !slotsOccupes[idPoule].has(n));
+        const librePartout = equipesClub.every(
+          ({ idPoule }) => !slotsOccupes[idPoule].has(n),
+        );
         if (librePartout) {
           numeroChoisi = n;
           break;
@@ -259,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (numeroChoisi === null) {
         return {
-          succes:  false,
+          succes: false,
           message: `Impossible d'attribuer un numéro synchronisé au club ${numClub}. Veuillez modifier les souhaits de ce club ou des clubs en conflit.`,
         };
       }
@@ -271,55 +282,153 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ── ÉTAPE 2 : Clubs "reparti" ────────────────────────────────────
+
+    function combinaisons(tableau, k) {
+      if (k === 0) return [[]];
+      if (k === tableau.length) return [tableau];
+      const [premier, ...reste] = tableau;
+      const avecPremier = combinaisons(reste, k - 1).map(c => [premier, ...c]);
+      const sansPremier = combinaisons(reste, k);
+      return [...avecPremier, ...sansPremier];
+    }
+
     const clubsReparti = Object.keys(Souhaits).filter(c => Souhaits[c] === "reparti");
 
-    for (const numClub of clubsReparti) {
-      const equipesClub = getEquipesClub(numClub).filter(({ equipe }) => equipe.numeroAttribue === null);
+    /*for (const numClub of clubsReparti) {
+      const equipesClub = getEquipesClub(numClub)
+        .filter(({ equipe }) => equipe.numeroAttribue === null);
+
       if (equipesClub.length === 0) continue;
 
-      const nb      = equipesClub.length;
-      const moitie1 = Math.floor(nb / 2);   // dans [1..T/2]
-      const moitie2 = nb - moitie1;          // dans [T/2+1..T] (peut être > moitie1 si impair)
-
-      // Mélange aléatoire pour répartition non déterministe si impair
-      const equipesMelangees = [...equipesClub].sort(() => Math.random() - 0.5);
+      // Club avec une seule équipe sera traité en étape 3
+      if (equipesClub.length === 1) continue;
 
       const demiT = Math.floor(T / 2);
-      const candidatsBas  = Array.from({ length: demiT },     (_, i) => i + 1);
-      const candidatsHaut = Array.from({ length: T - demiT }, (_, i) => demiT + i + 1);
+      const nb = equipesClub.length;
+      const nbImpair = nb % 2 !== 0;
 
-      // Groupe 1 : moitie1 équipes dans [1..T/2]
-      for (let i = 0; i < moitie1; i++) {
-        const { equipe, idPoule } = equipesMelangees[i];
-        const slot = trouverSlotLibre(idPoule, candidatsBas);
-        if (slot === null) {
-          return {
-            succes:  false,
-            message: `Impossible de répartir les équipes du club ${numClub} (côté domicile plein). Veuillez modifier les souhaits.`,
-          };
+      // Tailles des deux moitiés à tester
+      // Si pair   : une seule combinaison de tailles (nb/2, nb/2)
+      // Si impair : deux combinaisons de tailles (floor, ceil) et (ceil, floor)
+      const taillesBas = nbImpair
+        ? [Math.floor(nb / 2), Math.ceil(nb / 2)]
+        : [nb / 2];
+
+      let NumeroTrouve = false;
+
+      for (const tailleBas of taillesBas) {
+        if (NumeroTrouve) break;
+
+        const tailleHaut = nb - tailleBas;
+
+        // Toutes les combinaisons possibles pour la moitié basse
+        const combsBas = combinaisons(equipesClub, tailleBas);
+
+        for (const moitieBasse of combsBas) {
+          if (NumeroTrouve) break;
+
+          const moitieHaute = equipesClub.filter(e => !moitieBasse.includes(e));
+
+          // Chercher une paire (n, n+T/2) libre dans toutes les poules concernées
+          for (let n = 1; n <= demiT; n++) {
+            const nOppose = n + demiT;
+
+            const libreBasPartout = moitieBasse.every(({ idPoule }) => !slotsOccupes[idPoule].has(n));
+            const libreHautPartout = moitieHaute.every(({ idPoule }) => !slotsOccupes[idPoule].has(nOppose));
+
+            if (!libreBasPartout || !libreHautPartout) continue;
+
+            // ── Bonne combinaison trouvée
+            for (const { equipe, idPoule } of moitieBasse) {
+              attribuer(equipe, idPoule, n);
+            }
+            for (const { equipe, idPoule } of moitieHaute) {
+              attribuer(equipe, idPoule, nOppose);
+            }
+
+            NumeroTrouve = true;
+            break;
+          }
         }
-        attribuer(equipe, idPoule, slot);
       }
 
-      // Groupe 2 : moitie2 équipes dans [T/2+1..T]
-      for (let i = moitie1; i < moitie1 + moitie2; i++) {
-        const { equipe, idPoule } = equipesMelangees[i];
-        const slot = trouverSlotLibre(idPoule, candidatsHaut);
-        if (slot === null) {
-          return {
-            succes:  false,
-            message: `Impossible de répartir les équipes du club ${numClub} (côté extérieur plein). Veuillez modifier les souhaits.`,
-          };
+      if (!NumeroTrouve) {
+        return {
+          succes: false,
+          message: `Impossible de répartir les équipes du club ${numClub} en numéros opposés quelle que soit la combinaison. Veuillez modifier les souhaits.`,
+        };
+      }
+    }*/
+    for (const numClub of clubsReparti) {
+      const equipesClub = getEquipesClub(numClub)
+        .filter(({ equipe }) => equipe.numeroAttribue === null);
+
+      if (equipesClub.length === 0) continue;
+
+      // Club avec une seule équipe sera traité en étape 3
+      if (equipesClub.length === 1) continue;
+
+      const demiT = Math.floor(T / 2);
+      const nb = equipesClub.length;
+
+      const tailleBas = Math.floor(nb / 2);
+      const tailleHaut = nb - tailleBas;
+
+      let NumeroTrouve = false;
+
+      // Toutes les combinaisons possibles pour la moitié basse
+      const combsBas = combinaisons(equipesClub, tailleBas);
+
+      for (const moitieBasse of combsBas) {
+        if (NumeroTrouve) break;
+
+        const moitieHaute = equipesClub.filter(e => !moitieBasse.includes(e));
+
+        // Chercher une paire (n, n+T/2) libre dans toutes les poules concernées
+        for (let n = 1; n <= demiT; n++) {
+          const nOppose = n + demiT;
+
+          // On définit les deux configurations possibles à tester
+          const configurations = [
+            { bas: n, haut: nOppose },
+            { bas: nOppose, haut: n }
+          ];
+
+          // On cherche la première configuration qui fonctionne
+          const configValide = configurations.find(conf =>
+            moitieBasse.every(({ idPoule }) => !slotsOccupes[idPoule].has(conf.bas)) &&
+            moitieHaute.every(({ idPoule }) => !slotsOccupes[idPoule].has(conf.haut))
+          );
+
+          if (configValide) {
+            // ── Une seule logique d'attribution pour les deux cas
+            for (const { equipe, idPoule } of moitieBasse) {
+              attribuer(equipe, idPoule, configValide.bas);
+            }
+            for (const { equipe, idPoule } of moitieHaute) {
+              attribuer(equipe, idPoule, configValide.haut);
+            }
+
+            NumeroTrouve = true;
+            break;
+          }
         }
-        attribuer(equipe, idPoule, slot);
+      }
+
+
+      if (!NumeroTrouve) {
+        return {
+          succes: false,
+          message: `Impossible de répartir les équipes du club ${numClub} en numéros opposés quelle que soit la combinaison. Veuillez modifier les souhaits.`,
+        };
       }
     }
 
     // ── ÉTAPE 3 : Tous les restants (sans_preference + exempts) ─────
     for (const niv in Niveaux) {
       for (const nomPoule in Niveaux[niv].poules) {
-        const idPoule    = `${Niveaux[niv].categorie}-${niv}-${nomPoule}`;
-        const tousSlots  = Array.from({ length: T }, (_, i) => i + 1);
+        const idPoule = `${Niveaux[niv].categorie}-${niv}-${nomPoule}`;
+        const tousSlots = Array.from({ length: T }, (_, i) => i + 1);
 
         for (const equipe of Niveaux[niv].poules[nomPoule]) {
           if (equipe.numeroAttribue !== null) continue; // déjà attribuée
@@ -327,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const slot = trouverSlotLibre(idPoule, tousSlots);
           if (slot === null) {
             return {
-              succes:  false,
+              succes: false,
               message: `Plus de slots disponibles dans la poule ${nomPoule} niveau ${niv}. Vérifiez la cohérence des données.`,
             };
           }
@@ -349,24 +458,28 @@ document.addEventListener("DOMContentLoaded", () => {
       const { categorie, poules } = Niveaux[niv];
       for (const nomPoule in poules) {
         for (const equipe of poules[nomPoule]) {
-          lignes.push([
-            categorie,
-            niv,
-            nomPoule,
-            equipe.nomEquipe,
-            equipe.numClub,
-            equipe.numeroAttribue ?? "",
-          ].join(","));
+          lignes.push(
+            [
+              categorie,
+              niv,
+              nomPoule,
+              equipe.nomEquipe,
+              equipe.numClub,
+              equipe.numeroAttribue ?? "",
+            ].join(","),
+          );
         }
       }
     }
 
     const contenu = lignes.join("\n");
-    const blob    = new Blob(["\uFEFF" + contenu], { type: "text/csv;charset=utf-8;" });
-    const url     = URL.createObjectURL(blob);
-    const a       = document.createElement("a");
-    a.href        = url;
-    a.download    = "poules_numerotees.csv";
+    const blob = new Blob(["\uFEFF" + contenu], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "poules_numerotees.csv";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -375,7 +488,45 @@ document.addEventListener("DOMContentLoaded", () => {
     toast("Fichier CSV exporté avec succès.", "success");
   }
 
-  function exporterResultatExcel(){}
+  function exporterResultatExcel() {
+    if (typeof XLSX === "undefined") {
+      toast("Bibliothèque Excel non chargée.", "error");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const rows = [];
+    rows.push([
+      `Catégorie`,
+      `Niveau`,
+      `Poule`,
+      `Équipe`,
+      `Club`,
+      `N° Équipe`
+    ]);
+    for (const niv in Niveaux) {
+      const { categorie, poules } = Niveaux[niv];
+      for (const nomPoule in poules) {
+        for (const equipe of poules[nomPoule]) {
+          rows.push([categorie, niv, nomPoule, equipe.nomEquipe, equipe.numClub, equipe.numeroAttribue ?? ""]);
+        }
+      }
+    }
+
+    // Créer la feuille
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Largeurs de colonnes
+    ws["!cols"] = [{ wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 56 }, { wch: 15 }, { wch: 15 }];
+
+    //const nomFeuille = `Équipes Numérotées`;
+    XLSX.utils.book_append_sheet(wb, ws);
+
+    // Téléchargement
+    const nomFichier = `poules_numerotees.xlsx`;
+    XLSX.writeFile(wb, nomFichier);
+    toast("Fichier Excel exporté avec succès.", "success");
+  }
 
   /* ============================================================
      BOUTON GÉNÉRER
@@ -431,41 +582,56 @@ document.addEventListener("DOMContentLoaded", () => {
   ============================================================ */
 
   function afficherResultat() {
-    const container  = document.getElementById("calendrier-content");
-    const tabsBar    = document.getElementById("tabs-bar");
+    const container = document.getElementById("calendrier-content");
+    const tabsBar = document.getElementById("tabs-bar");
     const niveauxIds = Object.keys(Niveaux).sort((a, b) => a - b);
 
-    tabsBar.innerHTML = niveauxIds.map(niv => `
+    tabsBar.innerHTML = niveauxIds
+      .map(
+        (niv) => `
       <button class="tab-btn" data-niveau="${niv}">Niveau ${niv}</button>
-    `).join("");
+    `,
+      )
+      .join("");
 
     let niveauActif = niveauxIds[0];
 
     function renderNiveau(niv) {
       const { categorie, poules } = Niveaux[niv];
 
-      const blocsPoules = Object.entries(poules).map(([nomPoule, equipes]) => {
-        const lignes = equipes.map(e => `
-          <tr>
+      const blocsPoules = Object.entries(poules)
+        .map(([nomPoule, equipes]) => {
+          const lignes = equipes
+            .map(
+              (e) => {
+                const estExempt = e.nomEquipe === "Exempt";
+                const styleExempt = estExempt
+                  ? 'style="background-color: rgba(0, 0, 0, 0.05); color: #888; font-style: italic;"'
+                  : "";
+                return `
+          <tr ${styleExempt}>
             <td class="td-numero">${e.numeroAttribue ?? "—"}</td>
-            <td>${e.nomEquipe}</td>
+            <td class="td-nomEquipe">${e.nomEquipe}</td>
             <td class="td-club">${e.numClub}</td>
             <td class="td-souhait">${Souhaits[e.numClub] ?? "—"}</td>
           </tr>
-        `).join("");
+        `;
+              })
+            .join("");
 
-        return `
+          const nombreEquipesReelles = equipes.filter(e => e.nomEquipe !== "Exempt").length;
+          return `
           <div class="calendrier-bloc">
             <div class="calendrier-bloc-header">
               <span class="calendrier-bloc-title">Poule ${nomPoule}</span>
               <span style="font-size:.78rem;color:var(--clr-surface-400)">
-                ${equipes.length} équipes
+                ${nombreEquipesReelles} équipes
               </span>
             </div>
-            <table class="calendrier-table">
+            <table class="calendrier-table" style="table-layout:fixed">
               <thead>
                 <tr>
-                  <th>Numéro</th>
+                  <th style="text-align: center">Numéro</th>
                   <th>Équipe</th>
                   <th>Club</th>
                   <th>Souhait</th>
@@ -475,7 +641,8 @@ document.addEventListener("DOMContentLoaded", () => {
             </table>
           </div>
         `;
-      }).join("");
+        })
+        .join("");
 
       container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:var(--space-md)">
@@ -488,13 +655,18 @@ document.addEventListener("DOMContentLoaded", () => {
     renderNiveau(niveauActif);
 
     // Activer le premier onglet
-    tabsBar.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.niveau === String(niveauActif));
+    tabsBar.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.classList.toggle(
+        "active",
+        btn.dataset.niveau === String(niveauActif),
+      );
       btn.addEventListener("click", () => {
         niveauActif = btn.dataset.niveau;
-        tabsBar.querySelectorAll(".tab-btn").forEach(b =>
-          b.classList.toggle("active", b.dataset.niveau === niveauActif)
-        );
+        tabsBar
+          .querySelectorAll(".tab-btn")
+          .forEach((b) =>
+            b.classList.toggle("active", b.dataset.niveau === niveauActif),
+          );
         renderNiveau(niveauActif);
       });
     });
@@ -512,5 +684,5 @@ document.addEventListener("DOMContentLoaded", () => {
     //toast("Export Excel — à implémenter avec SheetJS.", "info");
     exporterResultatExcel();
   });
-
 });
+
