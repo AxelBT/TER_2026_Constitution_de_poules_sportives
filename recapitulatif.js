@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lignes = [];
 
     // En-tête
-    lignes.push("Catégorie,Niveau,Poule,Équipe,Club,N° Équipe");
+    lignes.push("Catégorie,Niveau,Poule,Équipe,Club");
 
     niveauxData.forEach(({ niveau, poules }) => {
       const nb_max_equipes = Math.max(
