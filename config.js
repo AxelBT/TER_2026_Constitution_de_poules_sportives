@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         genre: config.genre,
         niveauActuel: config.niveauActuel,
         mode: config.mode,
+        typeDistance: config.typeDistance
       });
 
       localStorage.setItem("clubs", JSON.stringify(clubs));

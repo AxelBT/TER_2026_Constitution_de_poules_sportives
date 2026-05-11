@@ -56,11 +56,11 @@ async function preparerNiveau(equipes, niveauActuel) {
   const storageKey = `matriceDistances:niveau${niveauActuel}`;
 
   let matrice = chargerMatrice(storageKey);
-  if (matrice) {
+  /*if (matrice) {
     console.log(`[niveau] Matrice du niveau ${niveauActuel} déjà remplie.`);
     console.table(matrice);
     return matrice;
-  }
+  }*/
   console.log([
     `[niveau] Liste des équpess du niveau ${niveauActuel} :`,
     equipes,
@@ -77,14 +77,16 @@ async function preparerNiveau(equipes, niveauActuel) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const config = {
+  //const params = new URLSearchParams(window.location.search);
+ /* const config = {
     categorie: params.get("categorie") || "senior",
     niveaux: parseInt(params.get("niveaux")) || 1,
     genre: params.get("genre") || "masculin",
     niveauActuel: parseInt(params.get("niveauActuel")) || 1,
     mode: params.get("mode") || "distance",
-  };
+    typeDistance: params.get("typeDistance") || "voiture",
+  };*/
+  const config = JSON.parse(localStorage.getItem("championnatConfig"));
 
   const PALETTE = [
     "#0abbef",
@@ -103,12 +105,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderStepper() {
     const stepper = document.getElementById("stepper");
     const etapes = [
-      { label: "Config", step: 0 },
+      { label: "Configuration", step: 0 },
       ...Array.from({ length: config.niveaux }, (_, i) => ({
         label: `Niveau ${i + 1}`,
         step: i + 1,
       })),
-      { label: "Récap", step: config.niveaux + 1 },
+      { label: "Récapitulatif", step: config.niveaux + 1 },
     ];
     const courant = config.niveauActuel;
     stepper.innerHTML = etapes
@@ -144,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
         niveaux: config.niveaux,
         genre: config.genre,
         mode: config.mode,
+        typeDistance: config.typeDistance,
         niveauActuel: config.niveauActuel,
       }).toString()
     );
@@ -192,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       config.niveauActuel--;
       localStorage.setItem("championnatConfig", JSON.stringify(config));
-      window.location.href = buildURL(config.niveauActuel);
+      window.location.href = buildURL();
     } else {
       const overlay = document.getElementById("modal-retour");
       overlay.style.display = "flex";
@@ -233,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (config.niveauActuel < config.niveaux) {
       config.niveauActuel++;
       localStorage.setItem("championnatConfig", JSON.stringify(config));
-      window.location.href = buildURL(config.niveauActuel);
+      window.location.href = buildURL();
     } else {
       window.location.href =
         "recapitulatif.html?" +
@@ -242,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
           niveaux: config.niveaux,
           genre: config.genre,
           mode: config.mode,
+          typeDistance: config.typeDistance
         }).toString();
     }
   });

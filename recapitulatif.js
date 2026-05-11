@@ -19,12 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderStepper() {
     const stepper = document.getElementById("stepper");
     const etapes = [
-      { label: "Config", step: 0 },
+      { label: "Configuration", step: 0 },
       ...Array.from({ length: config.niveaux }, (_, i) => ({
         label: `Niveau ${i + 1}`,
         step: i + 1,
       })),
-      { label: "Récap", step: config.niveaux + 1 },
+      { label: "Récapitulatif", step: config.niveaux + 1 },
     ];
 
     const courant = config.niveaux + 1; // récap = dernière étape
