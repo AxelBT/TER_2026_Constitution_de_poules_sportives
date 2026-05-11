@@ -19,10 +19,7 @@ export async function calculerEtStockerMatrice(
   return matrice;
 }
 
-/**
- * Recharge la matrice depuis le localStorage.
- * @returns {{matrice: number[][], idClubs: string[]} | null}
- */
+
 export function chargerMatrice(storageKey) {
   const brut = localStorage.getItem(storageKey);
   if (!brut) return null;
@@ -121,7 +118,6 @@ async function calculerMatriceDistances(clubs, onProgress) {
 
 export function distance(e1, e2) {
   if (e2.num_club && config.typeDistance === "voiture") {
-    console.log(e1, e2);
     return getDistance(e1.num_club, e2.num_club);
   }
   const R = 6371;

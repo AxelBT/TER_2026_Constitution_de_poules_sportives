@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = fileInput.files[0];
 
       if (!file) {
-        alert("Veuillez importer un fichier CSV des clubs.");
+        alert("Veuillez importer un fichier CSV contenant les informations géocodées des clubs.");
         return;
       }
 
