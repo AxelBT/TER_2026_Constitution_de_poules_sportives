@@ -19,12 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderStepper() {
     const stepper = document.getElementById("stepper");
     const etapes = [
-      { label: "Config", step: 0 },
+      { label: "Configuration", step: 0 },
       ...Array.from({ length: config.niveaux }, (_, i) => ({
         label: `Niveau ${i + 1}`,
         step: i + 1,
       })),
-      { label: "Récap", step: config.niveaux + 1 },
+      { label: "Récapitulatif", step: config.niveaux + 1 },
     ];
 
     const courant = config.niveaux + 1; // récap = dernière étape
@@ -279,24 +279,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const lignes = [];
 
     // En-tête
-    lignes.push("Catégorie;Niveau;Poule;N° Équipe;N° Club");
+    lignes.push("Catégorie,Niveau,Poule,Équipe,Club");
 
     niveauxData.forEach(({ niveau, poules }) => {
+      const nb_max_equipes = Math.max(
+              ...poules.map((p) => p.nb_max),
+            );
         poules.forEach((poule) => {
             const lettrePoule = poule.nom || "";
 
             poule.equipes.forEach((e) => {
-                const numEquipe = e.numero;
+                const Equipe = e.id;
                 const numClub   = e.num_club;
 
                 lignes.push([
                     categorie,
                     niveau,
                     lettrePoule,
-                    numEquipe,
+                    Equipe,
                     numClub,
-                ].join(";"));
+                ].join(","));
             });
+            if(poule.equipes.length<nb_max_equipes){
+              lignes.push([categorie,niveau,lettrePoule,"Exempt","—"].join(","));
+            }
         });
     });
 

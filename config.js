@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length > 0) {
         fileLabel.innerText = "Fichier prêt : " + e.target.files[0].name;
+        document.getElementById("file-limit").innerText="";
         const reader = new FileReader();
 
         reader.onload = function (event) {
@@ -32,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = fileInput.files[0];
 
       if (!file) {
-        alert("Veuillez importer un fichier CSV des clubs.");
+        alert("Veuillez importer un fichier CSV contenant les informations géocodées des clubs.");
         return;
       }
 
@@ -65,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
         genre: config.genre,
         niveauActuel: config.niveauActuel,
         mode: config.mode,
+        typeDistance: config.typeDistance
       });
 
       localStorage.setItem("clubs", JSON.stringify(clubs));

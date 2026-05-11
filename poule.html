@@ -10,10 +10,23 @@
   <body>
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- ── Bouton flottant : numérotation des équipes ── -->
+   <button type="button" class="btn-floating" id="btn-numerotation">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="10" y1="6" x2="21" y2="6"/>
+    <line x1="10" y1="12" x2="21" y2="12"/>
+    <line x1="10" y1="18" x2="21" y2="18"/>
+    <path d="M4 6h1v4"/>
+    <path d="M4 10h2"/>
+    <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
+  </svg>
+  <span>Numérotation des équipes</span>
+</button>
+
     <div class="container">
       <div class="card">
         <header class="card-header">
-          <h1>Initialisation du Championnat</h1>
+          <h1>Configuration Générale</h1>
           <p>Importez vos clubs et définissez les paramètres de base.</p>
         </header>
 
@@ -111,7 +124,7 @@
             </div>
           </div>
 
-          <!-- Type de distance — affiché uniquement si critère = Distance -->
+          <!-- Type de distance -->
           <div class="form-group" id="distance-type-group">
             <label>Type de distance</label>
             <div class="toggle-container">
@@ -157,17 +170,24 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M19 17h2v-3.34a4 4 0 0 0-1.17-2.83l-1.24-1.24A2 2 0 0 0 17.17 9H6.83a2 2 0 0 0-1.42.59L4.17 10.83A4 4 0 0 0 3 13.66V17h2" />
+                  <path
+                    d="M19 17h2v-3.34a4 4 0 0 0-1.17-2.83l-1.24-1.24A2 2 0 0 0 17.17 9H6.83a2 2 0 0 0-1.42.59L4.17 10.83A4 4 0 0 0 3 13.66V17h2"
+                  />
                   <circle cx="7" cy="17" r="2" />
                   <circle cx="17" cy="17" r="2" />
-                  <path d="M5 9l1.5-4.5A2 2 0 0 1 8.4 3h7.2a2 2 0 0 1 1.9 1.5L19 9" />
+                  <path
+                    d="M5 9l1.5-4.5A2 2 0 0 1 8.4 3h7.2a2 2 0 0 1 1.9 1.5L19 9"
+                  />
                 </svg>
                 En voiture
               </label>
             </div>
 
-            <!-- Avertissement affiché uniquement quand "voiture" est sélectionné -->
-            <div class="file-notice file-notice-warning" id="warning-voiture" style="display:none;">
+            <div
+              class="file-notice file-notice-warning"
+              id="warning-voiture"
+              style="display: none"
+            >
               <svg
                 width="14"
                 height="14"
@@ -178,16 +198,19 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <path
+                  d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               <span>
-                <strong>Calcul long :</strong> les distances routières sont obtenues
-                via l'API IGN avec une limite de 5 requêtes/seconde.
-                Comptez environ <strong>30 secondes par tranche de 10 clubs</strong>
-                dans un même niveau. Le calcul est effectué au moment de la génération
-                des poules de chaque niveau.
+                <strong>Calcul long :</strong> les distances routières sont
+                obtenues via l'API IGN avec une limite de 5 requêtes/seconde.
+                Comptez environ
+                <strong>30 secondes par tranche de 10 clubs</strong>
+                dans un même niveau. Le calcul est effectué au moment de la
+                génération des poules de chaque niveau.
               </span>
             </div>
           </div>
@@ -206,11 +229,10 @@
                 <p id="file-label">
                   Glissez votre fichier ici ou <strong>parcourez</strong>
                 </p>
-                <p class="file-limit">Format .csv uniquement</p>
+                <p id="file-limit" class="file-limit">Format .csv uniquement</p>
               </div>
             </div>
 
-            <!-- Note géocodage -->
             <div class="file-notice">
               <svg
                 width="14"
@@ -230,7 +252,7 @@
                 Le fichier CSV doit inclure les colonnes
                 <code>latitude</code> et <code>longitude</code> pour chaque
                 club. Vous pouvez géocoder votre fichier au préalable via
-                
+                <a
                   href="https://adresse.data.gouv.fr/csv"
                   target="_blank"
                   rel="noopener"
@@ -240,9 +262,23 @@
             </div>
           </div>
 
-          <div id="loader" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding: 3rem;">
+          <div
+            id="loader"
+            style="
+              display: none;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 20px;
+              padding: 3rem;
+            "
+          >
             <div class="spinner"></div>
-            <p class="loader-label">Récupération des coordonnées des clubs<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+            <p class="loader-label">
+              Récupération des coordonnées des clubs<span class="dots"
+                ><span>.</span><span>.</span><span>.</span></span
+              >
+            </p>
           </div>
 
           <button type="submit" class="btn-primary">
@@ -252,23 +288,88 @@
       </div>
     </div>
 
+    <!-- ── Modale de confirmation numérotation ── -->
+    <div class="modal-overlay" id="modal-numerotation" style="display: none">
+      <div class="modal">
+        <div class="modal-icon modal-icon--info">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Numérotation des équipes</h3>
+        <p class="modal-message">
+          Vous allez accéder à la page de configuration de la numérotation des
+          équipes.<br />
+          Les paramètres saisis sur cette page
+          <strong>ne seront pas conservés</strong>.<br />
+          Voulez-vous continuer&nbsp;?
+        </p>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn--cancel" id="modal-num-annuler">
+            Annuler
+          </button>
+          <button class="modal-btn modal-btn--confirm" id="modal-num-confirmer">
+            Oui, continuer
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="config.js"></script>
 
-<script>
-  (function () {
-    const warningVoiture = document.getElementById("warning-voiture");
-    const radioVoiture = document.getElementById("dist-voiture");
-    const radioVolOiseau = document.getElementById("dist-vol-oiseau");
+    <script>
+      // Warning voiture
+      (function () {
+        const warningVoiture = document.getElementById("warning-voiture");
+        const radioVoiture = document.getElementById("dist-voiture");
+        const radioVolOiseau = document.getElementById("dist-vol-oiseau");
 
-    function majWarningVoiture() {
-      warningVoiture.style.display = radioVoiture.checked ? "flex" : "none";
-    }
+        function majWarningVoiture() {
+          warningVoiture.style.display = radioVoiture.checked ? "flex" : "none";
+        }
 
-    radioVoiture.addEventListener("change", majWarningVoiture);
-    radioVolOiseau.addEventListener("change", majWarningVoiture);
+        radioVoiture.addEventListener("change", majWarningVoiture);
+        radioVolOiseau.addEventListener("change", majWarningVoiture);
+        majWarningVoiture();
+      })();
 
-    majWarningVoiture();
-  })();
-</script>
+      // Modale numérotation
+      (function () {
+        const modal = document.getElementById("modal-numerotation");
+        const btnOuvrir = document.getElementById("btn-numerotation");
+        const btnAnnuler = document.getElementById("modal-num-annuler");
+        const btnConfirmer = document.getElementById("modal-num-confirmer");
+
+        btnOuvrir.addEventListener("click", () => {
+          modal.style.display = "flex";
+        });
+        btnAnnuler.addEventListener("click", () => {
+          modal.style.display = "none";
+        });
+        btnConfirmer.addEventListener("click", () => {
+          window.location.href = "numerotation.html";
+        });
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) modal.style.display = "none";
+        });
+        // Touche Échap pour fermer
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && modal.style.display === "flex") {
+            modal.style.display = "none";
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
