@@ -254,12 +254,13 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.onload = async function (e) {
       const contenu = e.target.result;
 
-      // Traiter immédiatement
       const { succes, tableau } = await traiterCSV(contenu);
-      await preparerNiveau(tableau, config.niveauActuel);
+      let config_local = JSON.parse(localStorage.getItem("championnatConfig"));
+      if(config_local.typeDistance==="voiture") {
+      await preparerNiveau(tableau, config.niveauActuel);}
 
       if (!succes) {
-        equipesActuelles = []; //
+        equipesActuelles = []; 
         if (tableau.length > 0) afficherEquipesInconnues(tableau);
         return;
       }
