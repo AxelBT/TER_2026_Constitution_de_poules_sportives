@@ -128,6 +128,7 @@
       modal.style.display = "none";
     });
     btnConfirmer.addEventListener("click", () => {
+      localStorage.clear();
       window.location.href = "numerotation.html";
     });
     modal.addEventListener("click", (e) => {

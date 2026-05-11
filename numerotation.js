@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
      NAVIGATION
   ============================================================ */
   document.getElementById("btn-prev").addEventListener("click", () => {
-    window.location.href = "index.html";
+    window.location.href = "poule.html";
   });
 
   /* ============================================================
