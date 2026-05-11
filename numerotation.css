@@ -286,11 +286,37 @@ body {
     border-bottom: 1px solid var(--clr-surface-100);
     color: var(--clr-surface-700);
 }
-.calendrier-table tr:last-child td { border-bottom: none; }
-.calendrier-table tr:hover td { background: var(--clr-surface-50); }
 
-.td-domicile  { font-weight: 600; color: var(--clr-surface-800); }
-.td-exterieur { color: var(--clr-surface-500); }
+.calendrier-table tr:last-child td {
+    border-bottom: none;
+}
+
+.calendrier-table tr:hover td {
+    background: var(--clr-surface-50);
+}
+
+/* Largeurs fixes pour chaque colonne */
+.calendrier-table th:nth-child(1),
+.calendrier-table td:nth-child(1) { width: 80px;  }   /* Numéro */
+
+.calendrier-table th:nth-child(2),
+.calendrier-table td:nth-child(2) { width: 40%;   }   /* Équipe */
+
+.calendrier-table th:nth-child(3),
+.calendrier-table td:nth-child(3) { width: 20%;   }   /* Club */
+
+.calendrier-table th:nth-child(4),
+.calendrier-table td:nth-child(4) { width: 25%;   }   /* Souhait */
+
+.td-domicile {
+    font-weight: 600;
+    color: var(--clr-surface-800);
+}
+
+.td-exterieur {
+    color: var(--clr-surface-500);
+}
+
 .td-vs {
     font-size: .68rem;
     font-weight: 700;
@@ -298,23 +324,44 @@ body {
     text-align: center;
     width: 30px;
 }
+
 .td-numero {
     font-weight: 800;
     font-size: .9rem;
     color: var(--clr-primary-600);
     text-align: center;
-    width: 60px;
 }
+
+.td-nomEquipe {
+    max-width: 0;          
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+    transition: white-space .15s ease;
+}
+
+.calendrier-table tr:hover .td-nomEquipe {
+    white-space: normal;    /* retour à la ligne au survol */
+    overflow: visible;
+    text-overflow: unset;
+}
+
 .td-club {
     font-size: .73rem;
     color: var(--clr-surface-400);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 0;
 }
+
 .td-souhait {
     font-size: .73rem;
     color: var(--clr-surface-400);
     font-style: italic;
+    white-space: nowrap;
 }
-
 /* ── Modale ── */
 .modal-overlay {
     position: fixed; inset: 0; z-index: 9998;

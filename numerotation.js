@@ -452,7 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
      EXPORT CSV & Excel
   ============================================================ */
   function exporterResultatCSV() {
-    const lignes = ["Catégorie,Niveau,Poule,N° Équipe,N° Club,Numéro"];
+    const lignes = ["Catégorie,Niveau,Poule,Équipe,Club,Numéro"];
 
     for (const niv in Niveaux) {
       const { categorie, poules } = Niveaux[niv];
