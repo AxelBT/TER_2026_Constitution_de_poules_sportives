@@ -116,11 +116,14 @@ function distribuerEquipesNiveau(poules, equipes, quotas) {
           let cible = -1;
           let minTaille = Infinity;
           for (let p = 0; p < poules.length; p++) {
-            console.log(poules.length,p ,verifierClubDansPoule(poules[p], eq));     
-            if (poules[p].equipes.length >= poules[p].nb_max &&!verifierClubDansPoule(poules[p], eq) && poules[p].equipes.length < minTaille) {
-              minTaille = poules[p].equipes.length;
-              cible = p;
+            console.log(poules[p].equipes.length,!verifierClubDansPoule(poules[p], eq)); 
+            if (!verifierClubDansPoule(poules[p], eq)){
+                if (poules[p].equipes.length < poules[p].nb_max && poules[p].equipes.length < minTaille) {
+                minTaille = poules[p].equipes.length;
+                cible = p;
+              }
             }
+              setTimeout(console.log("waiting..."), 1000);
           }
 
           if (cible !== -1) {
