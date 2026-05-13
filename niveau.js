@@ -11,7 +11,8 @@ import {
 
 import { genererPoulesNiveau } from "./calcul-poules-niveau.js";
 
-import { toast } from "./toast.js";
+import { afficherErreur, toast } from "./toast.js";
+
 
 import {
   calculerEtStockerMatrice,
@@ -78,14 +79,14 @@ async function preparerNiveau(equipes, niveauActuel) {
 
 document.addEventListener("DOMContentLoaded", () => {
   //const params = new URLSearchParams(window.location.search);
- /* const config = {
-    categorie: params.get("categorie") || "senior",
-    niveaux: parseInt(params.get("niveaux")) || 1,
-    genre: params.get("genre") || "masculin",
-    niveauActuel: parseInt(params.get("niveauActuel")) || 1,
-    mode: params.get("mode") || "distance",
-    typeDistance: params.get("typeDistance") || "voiture",
-  };*/
+  /* const config = {
+     categorie: params.get("categorie") || "senior",
+     niveaux: parseInt(params.get("niveaux")) || 1,
+     genre: params.get("genre") || "masculin",
+     niveauActuel: parseInt(params.get("niveauActuel")) || 1,
+     mode: params.get("mode") || "distance",
+     typeDistance: params.get("typeDistance") || "voiture",
+   };*/
   const config = JSON.parse(localStorage.getItem("championnatConfig"));
 
   const PALETTE = [
@@ -260,11 +261,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { succes, tableau } = await traiterCSV(contenu);
       let config_local = JSON.parse(localStorage.getItem("championnatConfig"));
-      if(config_local.typeDistance==="voiture") {
-      await preparerNiveau(tableau, config.niveauActuel);}
+      if (config_local.typeDistance === "voiture") {
+        await preparerNiveau(tableau, config.niveauActuel);
+      }
 
       if (!succes) {
-        equipesActuelles = []; 
+        equipesActuelles = [];
         if (tableau.length > 0) afficherEquipesInconnues(tableau);
         return;
       }
@@ -287,10 +289,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     reader.readAsText(file);
     e.target.value = "";
-    if(poulesActuelles.length>0){
+    if (poulesActuelles.length > 0) {
       reinitialiserAffichagePoules();
-      document.getElementById("nb_poules").value="";
-      document.getElementById("nb_max_equipes").value="";
+      document.getElementById("nb_poules").value = "";
+      document.getElementById("nb_max_equipes").value = "";
     }
   });
 
@@ -300,8 +302,27 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     //localStorage.setItem("equipes", JSON.stringify(equipes));
-    const nb_poules = parseInt(document.getElementById("nb_poules").value);
-    const nb_max = parseInt(document.getElementById("nb_max_equipes").value);
+    const nb_poules_val = document.getElementById("nb_poules").value.trim();
+    const nb_max_val = document.getElementById("nb_max_equipes").value.trim();
+
+    if (nb_poules_val === "") {
+      afficherErreur(
+        "Champ manquant",
+        "Veuillez préciser le nombre de poules avant de générer."
+      );
+      return;
+    }
+
+    if (nb_max_val === "") {
+      afficherErreur(
+        "Champ manquant",
+        "Veuillez préciser le nombre maximum d'équipes par poule avant de générer."
+      );
+      return;
+    }
+
+    const nb_poules = parseInt(nb_poules_val);
+    const nb_max = parseInt(nb_max_val);
     const nb_equipes = equipesActuelles.length;
     if (nb_poules * nb_max < nb_equipes) {
       afficherErreur(
@@ -324,9 +345,9 @@ document.addEventListener("DOMContentLoaded", () => {
       afficherErreur(
         "Contrainte de club non respectée",
         `Le club "${check.nomClub}" (${check.numClub}) possède ${check.nbEquipes} équipes ` +
-          `pour seulement ${nb_poules} poule(s) disponible(s). ` +
-          `Il est impossible de répartir ses équipes sans conflit. ` +
-          `Veuillez augmenter le nombre de poules à au moins ${check.nbEquipes}.`,
+        `pour seulement ${nb_poules} poule(s) disponible(s). ` +
+        `Il est impossible de répartir ses équipes sans conflit. ` +
+        `Veuillez augmenter le nombre de poules à au moins ${check.nbEquipes}.`,
       );
       return;
     }
@@ -428,16 +449,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ── Affichage des erreurs ────────────────────────────────────────────────────── */
-  function afficherErreur(titre, message) {
-    const overlay = document.getElementById("modal-erreur");
-    document.getElementById("modal-erreur-titre").textContent = titre;
-    document.getElementById("modal-erreur-message").textContent = message;
-    overlay.style.display = "flex";
-
-    document.getElementById("modal-erreur-btn").onclick = () => {
-      overlay.style.display = "none";
-    };
-  }
 
   function afficherClubIngores() {
     const clubsIgnores = JSON.parse(
@@ -1070,14 +1081,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="font-size:0.7rem; color:#888; font-weight:normal">
               σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} km
             </div>
-            ${
-              isModeNiveau
-                ? `
+            ${isModeNiveau
+            ? `
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
               Poids : ${affichagePoids}
             </div>`
-                : ""
-            }
+            : ""
+          }
           </div>`;
         return `
     <div class="pool-card" data-poule-index="${pi}">
@@ -1113,8 +1123,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function reinitialiserAffichagePoules() {
-    poulesActuelles = []; 
-    localStorage.setItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`,JSON.stringify(poulesActuelles));
+    poulesActuelles = [];
+    localStorage.setItem(`${config.categorie}-${config.genre}-${config.niveauActuel}`, JSON.stringify(poulesActuelles));
 
     // Vider les méta-données (titres, badges, boutons)
     const meta = document.getElementById("pools-meta");
@@ -1124,7 +1134,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Elle va détecter que poulesActuelles est vide et affichera le SVG
     afficherPoules();
-}
+  }
   /* ── INIT ───────────────────────────────────────────────────────────────── */
   updateTitre();
   renderStepper();

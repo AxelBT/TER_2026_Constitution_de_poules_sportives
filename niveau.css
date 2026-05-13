@@ -878,6 +878,35 @@ body {
   background: rgba(0, 0, 0, 0.06);
 }
 
+/* ── Modale ── */
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(15,29,20,.45);
+    backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn .2s ease forwards;
+}
+.modal {
+    background: var(--clr-surface-0);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 40px rgba(15,29,20,.18);
+    padding: var(--space-xl);
+    max-width: 420px; width: 90%;
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-md);
+    animation: slideUp .25s ease forwards;
+    align-items: center;
+}
+.modal-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-icon--error { background: #fef2f2; color: #dc2626; border: 2px solid #fecaca; }
+.modal-title { font-family: var(--ff-display); font-size: 1.1rem; font-weight: 700; color: var(--clr-surface-900); text-align: center; }
+.modal-message { font-size: .875rem; color: var(--clr-surface-500); text-align: center; line-height: 1.6; }
+.modal-actions { display: flex; gap: var(--space-sm); width: 100%; margin-top: var(--space-sm); }
+.modal-btn { flex: 1; height: 44px; border-radius: var(--radius-md); font-family: var(--ff-body); font-size: .875rem; font-weight: 600; cursor: pointer; border: none; }
+.modal-btn--confirm-error { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+
 /* ──────────────────────────────────────
    LEAFLET TOOLTIP
 ────────────────────────────────────── */

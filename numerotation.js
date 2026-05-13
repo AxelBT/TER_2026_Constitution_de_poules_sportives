@@ -1,4 +1,5 @@
 import { toast, afficherErreur } from "./toast.js";
+//afficherErreur("check.titre", "check.message");
 
 //let ClubsMap = {};
 let Souhaits = {};
@@ -253,6 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const numClub of clubsSynchro) {
       const equipesClub = getEquipesClub(numClub);
       if (equipesClub.length === 0) continue; // club non présent dans les poules
+      if (equipesClub.length === 1) continue; // Club avec une seule équipe sera traité en étape 3
 
       // Trouver un numéro libre dans TOUTES les poules de ce club simultanément
       let numeroChoisi = null;
@@ -282,7 +284,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ── ÉTAPE 2 : Clubs "reparti" ────────────────────────────────────
-
     function combinaisons(tableau, k) {
       if (k === 0) return [[]];
       if (k === tableau.length) return [tableau];
@@ -294,71 +295,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const clubsReparti = Object.keys(Souhaits).filter(c => Souhaits[c] === "reparti");
 
-    /*for (const numClub of clubsReparti) {
-      const equipesClub = getEquipesClub(numClub)
-        .filter(({ equipe }) => equipe.numeroAttribue === null);
-
-      if (equipesClub.length === 0) continue;
-
-      // Club avec une seule équipe sera traité en étape 3
-      if (equipesClub.length === 1) continue;
-
-      const demiT = Math.floor(T / 2);
-      const nb = equipesClub.length;
-      const nbImpair = nb % 2 !== 0;
-
-      // Tailles des deux moitiés à tester
-      // Si pair   : une seule combinaison de tailles (nb/2, nb/2)
-      // Si impair : deux combinaisons de tailles (floor, ceil) et (ceil, floor)
-      const taillesBas = nbImpair
-        ? [Math.floor(nb / 2), Math.ceil(nb / 2)]
-        : [nb / 2];
-
-      let NumeroTrouve = false;
-
-      for (const tailleBas of taillesBas) {
-        if (NumeroTrouve) break;
-
-        const tailleHaut = nb - tailleBas;
-
-        // Toutes les combinaisons possibles pour la moitié basse
-        const combsBas = combinaisons(equipesClub, tailleBas);
-
-        for (const moitieBasse of combsBas) {
-          if (NumeroTrouve) break;
-
-          const moitieHaute = equipesClub.filter(e => !moitieBasse.includes(e));
-
-          // Chercher une paire (n, n+T/2) libre dans toutes les poules concernées
-          for (let n = 1; n <= demiT; n++) {
-            const nOppose = n + demiT;
-
-            const libreBasPartout = moitieBasse.every(({ idPoule }) => !slotsOccupes[idPoule].has(n));
-            const libreHautPartout = moitieHaute.every(({ idPoule }) => !slotsOccupes[idPoule].has(nOppose));
-
-            if (!libreBasPartout || !libreHautPartout) continue;
-
-            // ── Bonne combinaison trouvée
-            for (const { equipe, idPoule } of moitieBasse) {
-              attribuer(equipe, idPoule, n);
-            }
-            for (const { equipe, idPoule } of moitieHaute) {
-              attribuer(equipe, idPoule, nOppose);
-            }
-
-            NumeroTrouve = true;
-            break;
-          }
-        }
-      }
-
-      if (!NumeroTrouve) {
-        return {
-          succes: false,
-          message: `Impossible de répartir les équipes du club ${numClub} en numéros opposés quelle que soit la combinaison. Veuillez modifier les souhaits.`,
-        };
-      }
-    }*/
     for (const numClub of clubsReparti) {
       const equipesClub = getEquipesClub(numClub)
         .filter(({ equipe }) => equipe.numeroAttribue === null);
@@ -574,6 +510,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (panelExport) panelExport.style.display = "block";
 
     // Afficher le résultat dans l'interface
+    for (const niv in Niveaux) {
+      for (const nomPoule in Niveaux[niv].poules) {
+        Niveaux[niv].poules[nomPoule].sort(
+          (a, b) => a.numeroAttribue - b.numeroAttribue
+        );
+      }
+    }
     afficherResultat();
   });
 
@@ -685,4 +628,73 @@ document.addEventListener("DOMContentLoaded", () => {
     exporterResultatExcel();
   });
 });
+
+
+
+
+/*for (const numClub of clubsReparti) {
+      const equipesClub = getEquipesClub(numClub)
+        .filter(({ equipe }) => equipe.numeroAttribue === null);
+
+      if (equipesClub.length === 0) continue;
+
+      // Club avec une seule équipe sera traité en étape 3
+      if (equipesClub.length === 1) continue;
+
+      const demiT = Math.floor(T / 2);
+      const nb = equipesClub.length;
+      const nbImpair = nb % 2 !== 0;
+
+      // Tailles des deux moitiés à tester
+      // Si pair   : une seule combinaison de tailles (nb/2, nb/2)
+      // Si impair : deux combinaisons de tailles (floor, ceil) et (ceil, floor)
+      const taillesBas = nbImpair
+        ? [Math.floor(nb / 2), Math.ceil(nb / 2)]
+        : [nb / 2];
+
+      let NumeroTrouve = false;
+
+      for (const tailleBas of taillesBas) {
+        if (NumeroTrouve) break;
+
+        const tailleHaut = nb - tailleBas;
+
+        // Toutes les combinaisons possibles pour la moitié basse
+        const combsBas = combinaisons(equipesClub, tailleBas);
+
+        for (const moitieBasse of combsBas) {
+          if (NumeroTrouve) break;
+
+          const moitieHaute = equipesClub.filter(e => !moitieBasse.includes(e));
+
+          // Chercher une paire (n, n+T/2) libre dans toutes les poules concernées
+          for (let n = 1; n <= demiT; n++) {
+            const nOppose = n + demiT;
+
+            const libreBasPartout = moitieBasse.every(({ idPoule }) => !slotsOccupes[idPoule].has(n));
+            const libreHautPartout = moitieHaute.every(({ idPoule }) => !slotsOccupes[idPoule].has(nOppose));
+
+            if (!libreBasPartout || !libreHautPartout) continue;
+
+            // ── Bonne combinaison trouvée
+            for (const { equipe, idPoule } of moitieBasse) {
+              attribuer(equipe, idPoule, n);
+            }
+            for (const { equipe, idPoule } of moitieHaute) {
+              attribuer(equipe, idPoule, nOppose);
+            }
+
+            NumeroTrouve = true;
+            break;
+          }
+        }
+      }
+
+      if (!NumeroTrouve) {
+        return {
+          succes: false,
+          message: `Impossible de répartir les équipes du club ${numClub} en numéros opposés quelle que soit la combinaison. Veuillez modifier les souhaits.`,
+        };
+      }
+    }*/
 
