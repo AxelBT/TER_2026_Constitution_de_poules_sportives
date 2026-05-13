@@ -1,5 +1,6 @@
 import { distance } from "./matrice-distances.js";
 import { toast } from "./toast.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const config = JSON.parse(localStorage.getItem("championnatConfig"));
 
@@ -172,14 +173,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-size:0.7rem; color:#888; font-weight:normal">
                             σ: ${parseFloat(poule.ecart_type || 0).toFixed(0)} (Écart-type)
                         </div>
-                        ${
-                          isModeNiveau
-                            ? `
+                        ${isModeNiveau
+            ? `
             <div style="font-weight:600; font-size:.7rem; color:var(--clr-surface-600); margin-top:2px;">
               Poids : ${affichagePoids}
             </div>`
-                            : ""
-                        }
+            : ""
+          }
                     </div>
                 </div>
                 ${lignes}${exempt}
@@ -222,15 +222,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       poules.forEach((poule, pi) => {
         const lettre = poule.nom || String.fromCharCode(65 + pi);
-        let affichagePoids="";
-        if(config.mode === "niveau"){
+        let affichagePoids = "";
+        if (config.mode === "niveau") {
           const difficultePoule = poule.equipes.reduce((acc, e) => {
-          const statut = (e.statut_niveau || "").toLowerCase();
-          if (statut.includes("+") || statut === "montante") return acc - 1;
-          if (statut.includes("-") || statut === "descendante") return acc + 1;
-          return acc;
-        }, 0);
-        affichagePoids=` ---- Poids : ${difficultePoule}`;
+            const statut = (e.statut_niveau || "").toLowerCase();
+            if (statut.includes("+") || statut === "montante") return acc - 1;
+            if (statut.includes("-") || statut === "descendante") return acc + 1;
+            return acc;
+          }, 0);
+          affichagePoids = ` ---- Poids : ${difficultePoule}`;
         }
 
         // En-tête de la poule
@@ -251,6 +251,12 @@ document.addEventListener("DOMContentLoaded", () => {
             parseFloat(e.distance_totale || 0).toFixed(0),
           ]);
         });
+        const nb_max_equipes = Math.max(
+          ...poules.map((p) => p.nb_max),
+        );
+        if (poule.equipes.length < nb_max_equipes) {
+          rows.push(["Exempt", "—", "—"]);
+        }
 
         rows.push([]);
       });
@@ -283,43 +289,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
     niveauxData.forEach(({ niveau, poules }) => {
       const nb_max_equipes = Math.max(
-              ...poules.map((p) => p.nb_max),
-            );
-        poules.forEach((poule) => {
-            const lettrePoule = poule.nom || "";
+        ...poules.map((p) => p.nb_max),
+      );
+      poules.forEach((poule) => {
+        const lettrePoule = poule.nom || "";
 
-            poule.equipes.forEach((e) => {
-                const Equipe = e.id;
-                const numClub   = e.num_club;
+        poule.equipes.forEach((e) => {
+          const Equipe = e.id;
+          const numClub = e.num_club;
 
-                lignes.push([
-                    categorie,
-                    niveau,
-                    lettrePoule,
-                    Equipe,
-                    numClub,
-                ].join(","));
-            });
-            if(poule.equipes.length<nb_max_equipes){
-              lignes.push([categorie,niveau,lettrePoule,"Exempt","—"].join(","));
-            }
+          lignes.push([
+            categorie,
+            niveau,
+            lettrePoule,
+            Equipe,
+            numClub,
+          ].join(","));
         });
+        if (poule.equipes.length < nb_max_equipes) {
+          lignes.push([categorie, niveau, lettrePoule, "Exempt", "—"].join(","));
+        }
+      });
     });
 
     // Création et téléchargement du fichier
-    const contenu  = lignes.join("\n");
-    const blob     = new Blob(["\uFEFF" + contenu], { type: "text/csv;charset=utf-8;" });
-    const url      = URL.createObjectURL(blob);
-    const a        = document.createElement("a");
-    a.href         = url;
-    a.download     = `poules_${categorie}_${genre}.csv`;
+    const contenu = lignes.join("\n");
+    const blob = new Blob(["\uFEFF" + contenu], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `poules_${categorie}_${genre}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast("Fichier CSV exporté avec succès.", "success");
-}
+  }
 
   document.getElementById("btn-prev").addEventListener("click", () => {
     window.location.href =
@@ -378,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-export-csv").addEventListener("click", () => {
     exporterCSV(niveauxData);
   });
-  
+
 
   const niveauxManquants = [];
   for (let n = 1; n <= config.niveaux; n++) {
@@ -456,53 +462,53 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     XLSX.utils.book_append_sheet(wb, wsRecap, "Récapitulatif");*/
 
-    /*function afficherStatsGlobales(stats) {
-    document.getElementById("badge-recap").textContent =
-      `${stats.totalNiveaux} niveau(x)`;
+/*function afficherStatsGlobales(stats) {
+document.getElementById("badge-recap").textContent =
+  `${stats.totalNiveaux} niveau(x)`;
 
-    document.getElementById("stats-globales").innerHTML = `
-            <div class="stat-card">
-                <div class="stat-card-label">Niveaux</div>
-                <div class="stat-card-value">${stats.totalNiveaux}</div>
+document.getElementById("stats-globales").innerHTML = `
+        <div class="stat-card">
+            <div class="stat-card-label">Niveaux</div>
+            <div class="stat-card-value">${stats.totalNiveaux}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Poules</div>
+            <div class="stat-card-value">${stats.totalPoules}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Équipes</div>
+            <div class="stat-card-value">${stats.totalEquipes}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Dist. moy.</div>
+            <div class="stat-card-value">
+                ${stats.distMoyGlobal.toFixed(0)}
+                <span class="stat-card-unit">km</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Poules</div>
-                <div class="stat-card-value">${stats.totalPoules}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Équipes</div>
-                <div class="stat-card-value">${stats.totalEquipes}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-label">Dist. moy.</div>
-                <div class="stat-card-value">
-                    ${stats.distMoyGlobal.toFixed(0)}
-                    <span class="stat-card-unit">km</span>
-                </div>
-            </div>
-        `;
-  }*/
+        </div>
+    `;
+}*/
 
-  /*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
-    const container = document.getElementById("niveau-selector");
-    container.innerHTML = niveauxData
-      .map(({ niveau, poules }) => {
-        const nbEq = poules.reduce((s, p) => s + p.equipes.length, 0);
-        return `
-            <div class="niveau-selector-item ${niveau === niveauActif ? "active" : ""}"
-                 data-niveau="${niveau}">
-                Niveau ${niveau}
-                <span class="ns-badge">${poules.length} poules · ${nbEq} éq.</span>
-            </div>`;
-      })
-      .join("");
+/*function renderSelectorSidebar(niveauxData, niveauActif, onSelect) {
+  const container = document.getElementById("niveau-selector");
+  container.innerHTML = niveauxData
+    .map(({ niveau, poules }) => {
+      const nbEq = poules.reduce((s, p) => s + p.equipes.length, 0);
+      return `
+          <div class="niveau-selector-item ${niveau === niveauActif ? "active" : ""}"
+               data-niveau="${niveau}">
+              Niveau ${niveau}
+              <span class="ns-badge">${poules.length} poules · ${nbEq} éq.</span>
+          </div>`;
+    })
+    .join("");
 
-    container.querySelectorAll(".niveau-selector-item").forEach((el) => {
-      el.addEventListener("click", () => {
-        onSelect(parseInt(el.dataset.niveau));
-      });
+  container.querySelectorAll(".niveau-selector-item").forEach((el) => {
+    el.addEventListener("click", () => {
+      onSelect(parseInt(el.dataset.niveau));
     });
-  }*/
+  });
+}*/
 
 /*function afficherNiveau(niveauData) {
         const { niveau, poules } = niveauData;

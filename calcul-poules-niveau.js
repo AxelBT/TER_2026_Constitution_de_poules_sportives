@@ -49,7 +49,6 @@ function ajouterEquipeDansPouleNiveau(poule, equipe) {
   return false;
 }
 
-
 // --------- Distribution gloutonne par statut -------------------------
 
 function distribuerEquipesNiveau(poules, equipes, quotas) {

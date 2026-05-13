@@ -1,4 +1,4 @@
-import { toast } from "./toast.js";
+import { afficherErreur, toast } from "./toast.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-config");
@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
         reader.onload = function (event) {
           const contenu = event.target.result;
           [clubs, clubs_ignores] = traiter_csv_clubs(contenu);
+          console.log(clubs);
         };
 
         reader.readAsText(e.target.files[0]); // corrigé : était "file" (undefined)
@@ -32,8 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const file = fileInput.files[0];
 
+      const categorie = document.getElementById("cat-select").value;
+      if(categorie === ""){
+        afficherErreur("Catégorie non renseignée","Veuillez sélectionner une catégorie avant de passer à l’étape suivante.");
+        return;
+      }
+
       if (!file) {
-        alert("Veuillez importer un fichier CSV contenant les informations géocodées des clubs.");
+        //alert("Veuillez importer un fichier CSV contenant les informations géocodées des clubs.");
+        afficherErreur("Importation requise","Veuillez importer un fichier CSV contenant les informations géocodées des clubs.");
         return;
       }
 
@@ -41,6 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("Aucun club valide trouvé dans le fichier.", "error");
         return;
       }
+
+      
 
       const selectedModeId = document.querySelector(
         'input[name="generation-choice"]:checked',
