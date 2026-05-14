@@ -741,6 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const hint = document.getElementById("edit-hint");
       if (hint) {
         hint.textContent = "✓ Échange effectué.";
+        toast("Échange effectué avec succès.", "success");
         setTimeout(() => {
           if (modeEdition)
             hint.textContent = "Cliquez sur deux équipes pour les échanger.";
@@ -942,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Toast warn (pas error) — léger et non bloquant
-    toast("Conflit de club — même club déjà présent dans cette poule", "warn");
+    toast("Conflit de club : même club déjà présent dans cette poule", "warn");
   }
 
   function signalerErreurExempt(pouleIndex) {
