@@ -943,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Toast warn (pas error) — léger et non bloquant
-    toast("Conflit de club — même club déjà présent dans cette poule", "warn");
+    toast("Conflit de club : même club déjà présent dans cette poule", "warn");
   }
 
   function signalerErreurExempt(pouleIndex) {

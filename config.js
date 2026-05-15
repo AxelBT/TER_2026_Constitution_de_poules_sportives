@@ -97,27 +97,51 @@ function traiter_csv_clubs(contenu) {
   const ignores = [];
 
   const lignes = contenu.trim().split("\n");
-  console.log("Début du traitement");
+  if (lignes.length === 0) return [[], []];
 
   const parserLigneCsv = (ligne) => {
     const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
     return ligne.split(regex).map((cell) => cell.replace(/^"|"$/g, "").trim());
   };
 
+  const headers = parserLigneCsv(lignes[0]).map((h) => h.toLowerCase());
+
+  const idx = {
+    id: headers.indexOf("cd_org"),
+    nom: headers.indexOf("lb_org"),
+    adresse: headers.indexOf("adresse"),
+    complement: headers.indexOf("adresse_complement"),
+    commune: headers.indexOf("lb_cmne"),
+    code_postal: headers.indexOf("code_postal"),
+    type: headers.indexOf("lb_type_association"),
+    longitude: headers.indexOf("longitude"),
+    latitude: headers.indexOf("latitude"),
+  };
+
+  const requises = ["id", "nom", "longitude", "latitude"];
+  const manquantes = requises.filter((cle) => idx[cle] === -1);
+  if (manquantes.length > 0) {
+    toast(
+      `Colonnes manquantes dans le CSV : ${manquantes.join(", ")}`,
+      "error",
+    );
+    return [[], []];
+  }
+
   for (let i = 1; i < lignes.length; i++) {
     if (lignes[i].trim() === "") continue;
 
     const colonnes = parserLigneCsv(lignes[i]);
 
-    const id = colonnes[0] || "";
-    const nom = colonnes[1] || "";
-    const adresse = colonnes[2] || "";
-    const complement = colonnes[3] || "";
-    const commune = colonnes[4] || "";
-    const codePostal = colonnes[5] || "";
-    const type = colonnes[6] || "club";
-    const lng = parseFloat(colonnes[7]);
-    const lat = parseFloat(colonnes[8]);
+    const id = colonnes[idx.id]?.trim() || "";
+    const nom = colonnes[idx.nom]?.trim() || "";
+    const adresse = colonnes[idx.adresse]?.trim() || "";
+    const complement = colonnes[idx.complement]?.trim() || "";
+    const commune = colonnes[idx.commune]?.trim() || "";
+    const codePostal = colonnes[idx.code_postal]?.trim() || "";
+    const type = colonnes[idx.type]?.trim() || "club";
+    const lng = parseFloat(colonnes[idx.longitude]);
+    const lat = parseFloat(colonnes[idx.latitude]);
 
     if (!nom) {
       ignores.push(`ligne ${i + 1}`);
@@ -140,18 +164,13 @@ function traiter_csv_clubs(contenu) {
       latitude: lat,
       longitude: lng,
       adresse: `${rueEtComplement} ${codePostal} ${commune}`.trim(),
-      type: type.trim(),
+      type: type,
     });
-
-    console.log(`✓ ${nom} (${lat}, ${lng})`);
   }
 
-  console.log(
-    `Résultat: ${data.length} clubs chargés, ${ignores.length} ignorés`,
-  );
+  console.log(`${data.length} clubs chargés, ${ignores.length} ignorés`);
 
   if (ignores.length > 0) {
-    console.warn(`${ignores.length} club(s) ignoré(s) :`, ignores);
     const preview = ignores.slice(0, 3).join(", ");
     toast(
       `${ignores.length} club(s) sans coordonnées ignoré(s) : ${preview}${ignores.length > 3 ? "..." : ""}.`,
