@@ -741,6 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const hint = document.getElementById("edit-hint");
       if (hint) {
         hint.textContent = "✓ Échange effectué.";
+        toast("Échange effectué avec succès.","success");
         setTimeout(() => {
           if (modeEdition)
             hint.textContent = "Cliquez sur deux équipes pour les échanger.";
