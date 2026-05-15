@@ -9,19 +9,59 @@
 
   <body>
     <div class="toast-container" id="toast-container"></div>
+    <!-- Modale erreur -->
+    <div class="modal-overlay" id="modal-erreur" style="display: none">
+      <div class="modal">
+        <div class="modal-icon modal-icon--error">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 class="modal-title" id="modal-erreur-titre">Erreur</h3>
+        <p class="modal-message" id="modal-erreur-message"></p>
+        <div class="modal-actions">
+          <button
+            class="modal-btn modal-btn--confirm-error"
+            id="modal-erreur-btn"
+          >
+            J'ai compris
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Bouton flottant : numérotation des équipes ── -->
-   <button type="button" class="btn-floating" id="btn-numerotation">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="10" y1="6" x2="21" y2="6"/>
-    <line x1="10" y1="12" x2="21" y2="12"/>
-    <line x1="10" y1="18" x2="21" y2="18"/>
-    <path d="M4 6h1v4"/>
-    <path d="M4 10h2"/>
-    <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
-  </svg>
-  <span>Numérotation des équipes</span>
-</button>
+    <button type="button" class="btn-floating" id="btn-numerotation">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="10" y1="6" x2="21" y2="6" />
+        <line x1="10" y1="12" x2="21" y2="12" />
+        <line x1="10" y1="18" x2="21" y2="18" />
+        <path d="M4 6h1v4" />
+        <path d="M4 10h2" />
+        <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+      </svg>
+      <span>Numérotation des équipes</span>
+    </button>
 
     <div class="container">
       <div class="card">
@@ -35,8 +75,13 @@
             <label for="cat-select">Choisissez une catégorie&nbsp;:</label>
             <select name="category" id="cat-select">
               <option value="">Veuillez choisir une option</option>
-              <option value="senior">Senior</option>
-              <option value="junior">Junior</option>
+              <option value="senior">Seniors</option>
+              <option value="U21">U21</option>
+              <option value="U18">U18</option>
+              <option value="U15">U15</option>
+              <option value="U13">U13</option>
+              <option value="U11">U11</option>
+              <option value="U9">U9</option>
             </select>
           </div>
 
@@ -77,6 +122,7 @@
                 name="generation-choice"
                 id="gen-distance"
                 class="toggle-input"
+                required
                 checked
               />
               <label for="gen-distance" class="toggle-label">
