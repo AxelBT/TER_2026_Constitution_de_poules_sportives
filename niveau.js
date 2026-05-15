@@ -173,12 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file_csv_niveau");
   const fileLabel = document.getElementById("file-label");
 
-  if (fileInput) {
+  /*if (fileInput) {
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length > 0)
         fileLabel.innerText = "Fichier prêt : " + e.target.files[0].name;
     });
-  }
+  }*/
 
   if (config.niveauActuel === 1) {
     btnPrev.innerHTML = `
@@ -260,17 +260,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const contenu = e.target.result;
 
       const { succes, tableau } = await traiterCSV(contenu);
-      let config_local = JSON.parse(localStorage.getItem("championnatConfig"));
-      if (config_local.typeDistance === "voiture") {
-        await preparerNiveau(tableau, config.niveauActuel);
-      }
-
       if (!succes) {
         equipesActuelles = [];
         if (tableau.length > 0) afficherEquipesInconnues(tableau);
         return;
       }
-
+      let config_local = JSON.parse(localStorage.getItem("championnatConfig"));
+      if (config_local.typeDistance === "voiture") {
+        await preparerNiveau(tableau, config.niveauActuel);
+      }
+      fileLabel.innerText = "Fichier prêt : " + file.name;
       equipesActuelles = tableau;
       localStorage.setItem(
         `csv_equipes_niveau${config.niveauActuel}`,
@@ -368,15 +367,12 @@ document.addEventListener("DOMContentLoaded", () => {
         `${equipesActuelles.length} équipes réparties en ${poulesActuelles.length} poules.`,
         "success",
       );
-      if (!localStorage.getItem("hint_carte_vu")) {
-        setTimeout(() => {
-          toast(
-            "Cliquez sur une poule pour la visualiser sur la carte.",
-            "info",
-          );
-          localStorage.setItem("hint_carte_vu", "1");
-        }, 4500);
-      }
+
+      toast(
+        "Cliquez sur une poule pour la visualiser sur la carte.",
+        "info",
+      );
+
     }
   });
 
@@ -741,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const hint = document.getElementById("edit-hint");
       if (hint) {
         hint.textContent = "✓ Échange effectué.";
-        toast("Échange effectué avec succès.","success");
+        toast("Échange effectué avec succès.", "success");
         setTimeout(() => {
           if (modeEdition)
             hint.textContent = "Cliquez sur deux équipes pour les échanger.";

@@ -725,7 +725,7 @@ export function generer_poules(equipes, nb_poules) {
       }
     }
   }
-  //equilibrerDistancesMoyennes(poules);
+  equilibrerDistancesMoyennes(poules);
   finaliserStatistiquesPoules(poules);
   console.log("Poules générées :", poules);
   return poules;
