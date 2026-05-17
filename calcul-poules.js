@@ -709,6 +709,7 @@ export function generer_poules(equipes, nb_poules) {
   restantes = trierParIsolement(restantes, barycentre);
 
   for (const equipe of restantes) {
+    console.log(equipe.id);
     const meilleure = choisirMeilleurePoule(poules, equipe);
 
     if (meilleure) {
