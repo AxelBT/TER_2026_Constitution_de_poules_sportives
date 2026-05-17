@@ -102,6 +102,18 @@ document.addEventListener("DOMContentLoaded", () => {
     "#4f46e5",
   ];
 
+  /*const PALETTE = [
+    "#0abbef",
+    "#2563eb",
+    "#ff0000",
+    "#cca526",
+    "#9564ea",
+    "#f3599e",
+    "#0891b2",
+    "#65a30d",
+    "#f58447",
+    "#18d631",
+  ];*/
   /* ── STEPPER ────────────────────────────────────────────────────────────── */
   function renderStepper() {
     const stepper = document.getElementById("stepper");
@@ -158,6 +170,9 @@ document.addEventListener("DOMContentLoaded", () => {
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '<a href="https://openstreetmap.org">OpenStreetMap</a>',
     maxZoom: 18,
+    updateWhenIdle: false,  // Charge les tuiles pendant l'animation du zoom, pas après
+    updateWhenZooming: true, // Force la mise à jour pendant le zoom
+    keepBuffer: 10
   }).addTo(map);
 
   let markers = [];
@@ -867,6 +882,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+
   function attacherListenersMarqueurs() {
     markers.forEach((m) => {
       m.off("click");
@@ -882,7 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!selection) {
           selection = { pi, eid, el: null };
-          m.setIcon(createPinIcon("#f59e0b", 1));
+          m.setIcon(createPinIcon("#000000", 0.6));
           m.setZIndexOffset(2000);
           const hint = document.getElementById("edit-hint");
           if (hint)
@@ -904,7 +920,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selection.pi === pi) {
           highlightToutesLesPoules();
           selection = { pi, eid, el: null };
-          m.setIcon(createPinIcon("#f59e0b", 1));
+          console.log(m);
+          m.setIcon(createPinIcon("#000000", 0.6));
           m.setZIndexOffset(2000);
           return;
         }
