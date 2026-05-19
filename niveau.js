@@ -341,7 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (nb_poules * nb_max < nb_equipes) {
       afficherErreur(
         "Capacité insuffisante",
-        "La capacité des poules est insuffisante pour accueillir toutes les équipes. Veuillez augmenter le nombre de poules ou la taille maximale.",
+        `Le nombre total de places disponibles (${nb_poules} poules × ${nb_max} équipes = ${nb_poules * nb_max} places) est insuffisant pour accueillir les ${nb_equipes} équipes. Veuillez augmenter le nombre de poules ou la taille maximale par poule.`
       );
       return;
     }
